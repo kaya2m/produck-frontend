@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ng build)",
+      "Bash(find:*)",
+      "Bash(npm run build:*)",
+      "Bash(ng serve:*)",
+      "Bash(ng build:*)",
+      "Read(//mnt/c/Projects/Produck/produck-api/**)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(npm install:*)",
+      "Bash(touch:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

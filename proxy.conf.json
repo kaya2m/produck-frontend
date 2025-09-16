@@ -1,0 +1,14 @@
+{
+  "/api/*": {
+    "target": "https://localhost:7130",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug",
+    "onProxyReq": function(proxyReq, req, res) {
+      console.log("Proxying request to:", proxyReq.path);
+    },
+    "onError": function(err, req, res) {
+      console.log("Proxy error:", err);
+    }
+  }
+}
