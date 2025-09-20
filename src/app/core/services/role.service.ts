@@ -1,34 +1,82 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
-import { Role } from '../models/user-management.models';
+import { ApiService } from './api.service';
+import {
+  Role,
+  RoleWithPermissions,
+  Permission,
+  CreateRoleRequest,
+  CreateRoleResponse,
+  UpdateRoleRequest,
+  UpdateRoleResponse,
+  AssignPermissionsRequest,
+  AssignPermissionsResponse,
+  RemovePermissionsRequest,
+  RemovePermissionsResponse
+} from '../models/user-management.models';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RoleService {
-  private readonly API_URL = `${environment.api.baseUrl}/roles`;
+  private apiService = inject(ApiService);
+  private readonly baseUrl = 'roles';
 
-  constructor(private http: HttpClient) {}
-
-  // Get all roles
-  getRoles(): Observable<Role[]> {
-    return this.http.get<Role[]>(this.API_URL);
+  getAllRoles(): Observable<Role[]> {
+    return this.apiService.get<Role[]>(this.baseUrl);
   }
 
-  // Create new role
-  createRole(request: { name: string; description?: string }): Observable<Role> {
-    return this.http.post<Role>(this.API_URL, request);
+  getRoleById(id: string): Observable<Role> {
+    return this.apiService.get<Role>(`${this.baseUrl}/${id}`);
   }
 
-  // Update role
-  updateRole(id: string, request: { name: string; description?: string }): Observable<Role> {
-    return this.http.put<Role>(`${this.API_URL}/${id}`, request);
+  createRole(request: CreateRoleRequest): Observable<CreateRoleResponse> {
+    return this.apiService.post<CreateRoleResponse>(this.baseUrl, request);
   }
 
-  // Delete role
+  updateRole(id: string, request: UpdateRoleRequest): Observable<UpdateRoleResponse> {
+    return this.apiService.put<UpdateRoleResponse>(`${this.baseUrl}/${id}`, request);
+  }
+
   deleteRole(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.API_URL}/${id}`);
+    return this.apiService.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  getRolePermissions(roleId: string): Observable<Permission[]> {
+    return this.apiService.get<Permission[]>(`${this.baseUrl}/${roleId}/permissions`);
+  }
+
+  assignPermissions(roleId: string, request: AssignPermissionsRequest): Observable<AssignPermissionsResponse> {
+    return this.apiService.post<AssignPermissionsResponse>(`${this.baseUrl}/${roleId}/assign-permissions`, request);
+  }
+
+  removePermissions(roleId: string, request: RemovePermissionsRequest): Observable<RemovePermissionsResponse> {
+    return this.apiService.delete<RemovePermissionsResponse>(`${this.baseUrl}/${roleId}/remove-permissions`, request);
+  }
+
+  getRoleWithPermissions(roleId: string): Observable<RoleWithPermissions> {
+    return new Observable(observer => {
+      this.getRoleById(roleId).subscribe({
+        next: (role) => {
+          this.getRolePermissions(roleId).subscribe({
+            next: (permissions) => {
+              observer.next({ ...role, permissions });
+              observer.complete();
+            },
+            error: (error) => observer.error(error)
+          });
+        },
+        error: (error) => observer.error(error)
+      });
+    });
+  }
+
+  // Legacy methods for backward compatibility
+  getRoles(): Observable<Role[]> {
+    return this.getAllRoles();
+  }
+
+  assignPermissions_legacy(id: string, permissionIds: string[]): Observable<AssignPermissionsResponse> {
+    return this.assignPermissions(id, { permissionIds });
   }
 }

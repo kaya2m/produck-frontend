@@ -1,0 +1,352 @@
+<div class="security-container">
+  <!-- Header -->
+  <div slot="actions">
+    <app-button class="mr-2"
+      variant="stroked"
+      text="Refresh"
+      leadingIcon="refresh"
+      [loading]="isRefreshing()"
+      (buttonClick)="refreshData()">
+    </app-button>
+    <app-button
+      variant="raised"
+      color="primary"
+      text="Export Report"
+      leadingIcon="file_download"
+      (buttonClick)="exportReport()">
+    </app-button>
+  </div>
+
+  <mat-tab-group>
+    <!-- Dashboard Tab -->
+    <mat-tab label="Security Dashboard">
+      @if (isLoadingDashboard()) {
+        <div class="loading-container">
+          <mat-spinner></mat-spinner>
+          <span>Loading security data...</span>
+        </div>
+      } @else if (dashboard()) {
+        <div class="dashboard-content">
+          <!-- Key Metrics Cards -->
+          <div class="metrics-grid">
+            <app-card title="Total Access Attempts" variant="outlined" size="small">
+              <div class="metric-content">
+                <div class="metric-icon-wrapper">
+                  <mat-icon class="metric-icon">login</mat-icon>
+                </div>
+                <div class="metric-details">
+                  <div class="metric-value">{{ dashboard()!.totalAccesses | number }}</div>
+                  <div class="metric-subtitle">{{ getTotalSuccessful() | number }} successful</div>
+                </div>
+              </div>
+            </app-card>
+
+            <app-card title="Denied Accesses" variant="outlined" size="small" state="warning">
+              <div class="metric-content">
+                <div class="metric-icon-wrapper warning">
+                  <mat-icon class="metric-icon">block</mat-icon>
+                </div>
+                <div class="metric-details">
+                  <div class="metric-value">{{ dashboard()!.deniedAccesses | number }}</div>
+                  <div class="metric-subtitle">{{ getDeniedPercentage() }}% of total</div>
+                </div>
+              </div>
+            </app-card>
+
+            <app-card title="High Risk Accesses" variant="outlined" size="small" state="error">
+              <div class="metric-content">
+                <div class="metric-icon-wrapper danger">
+                  <mat-icon class="metric-icon">warning</mat-icon>
+                </div>
+                <div class="metric-details">
+                  <div class="metric-value">{{ dashboard()!.highRiskAccesses | number }}</div>
+                  <div class="metric-subtitle">Requires attention</div>
+                </div>
+              </div>
+            </app-card>
+
+            <app-card title="Active Alerts" variant="outlined" size="small" [state]="getActiveAlertsCount() > 0 ? 'error' : 'success'">
+              <div class="metric-content">
+                <div class="metric-icon-wrapper" [class.danger]="getActiveAlertsCount() > 0">
+                  <mat-icon class="metric-icon">
+                    {{ getActiveAlertsCount() > 0 ? 'notification_important' : 'verified' }}
+                  </mat-icon>
+                </div>
+                <div class="metric-details">
+                  <div class="metric-value">{{ getActiveAlertsCount() | number }}</div>
+                  <div class="metric-subtitle">
+                    @if (getActiveAlertsCount() > 0) {
+                      <span class="text-danger">Needs attention</span>
+                    } @else {
+                      <span class="text-success">All clear</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </app-card>
+          </div>
+
+          <!-- Top Risk Users -->
+          <app-card title="Top Risk Users" subtitle="Users with highest risk scores" variant="default">
+            @if (getRiskUsers().length === 0) {
+              <div class="empty-state">
+                <mat-icon class="empty-icon">people_outline</mat-icon>
+                <p>No high-risk users found</p>
+              </div>
+            } @else {
+              <div class="risk-users-list">
+                @for (user of getRiskUsers(); track user.userId) {
+                  <div class="risk-user-item">
+                    <div class="user-info">
+                      <div class="user-name">{{ user.userName }}</div>
+                      <div class="user-details">{{ user.accessCount }} accesses</div>
+                    </div>
+                    <div class="risk-score" [class]="getRiskScoreClass(user.riskScore)">
+                      {{ user.riskScore }}
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </app-card>
+        </div>
+      }
+    </mat-tab>
+
+    <!-- Audit Logs Tab -->
+    <mat-tab label="Audit Logs">
+      <div class="audit-logs-content">
+        <!-- Filters -->
+        <app-card title="Filters" variant="outlined" size="small">
+          <form [formGroup]="auditFiltersForm" class="filters-form">
+            <div class="filters-row">
+              <app-input
+                label="Date From"
+                type="date"
+                formControlName="dateFrom"
+                size="medium">
+              </app-input>
+
+              <app-input
+                label="Date To"
+                type="date"
+                formControlName="dateTo"
+                size="medium">
+              </app-input>
+
+              <app-input
+                label="User"
+                placeholder="Search by user..."
+                formControlName="user"
+                [clearable]="true"
+                size="medium">
+              </app-input>
+
+              <app-button
+                variant="raised"
+                color="primary"
+                text="Apply Filters"
+                (buttonClick)="applyAuditFilters()">
+              </app-button>
+
+              <app-button
+                variant="stroked"
+                text="Clear"
+                (buttonClick)="clearAuditFilters()">
+              </app-button>
+            </div>
+          </form>
+        </app-card>
+
+        <!-- Audit Logs Table -->
+        <app-table
+          title="Audit Logs"
+          [subtitle]="filteredAuditLogs().length + ' entries found'"
+          [columns]="auditLogColumns"
+          [data]="filteredAuditLogs()"
+          [loading]="isLoadingAuditLogs()"
+          loadingText="Loading audit logs..."
+          size="compact"
+          variant="striped"
+          [paginator]="true"
+          [selectable]="false"
+          [enableContextMenu]="false"
+          emptyStateTitle="No audit logs found"
+          emptyStateMessage="No audit logs match your current filters."
+          emptyStateIcon="assignment"
+          (sortChange)="onAuditLogSort($event)"
+          (pageChange)="onAuditLogPageChange($event)">
+        </app-table>
+      </div>
+    </mat-tab>
+
+    <!-- Security Alerts Tab -->
+    <mat-tab label="Security Alerts">
+      <div class="alerts-content">
+        <app-card title="Security Alerts" [subtitle]="securityAlerts().length + ' alerts found'" variant="default">
+          <div slot="actions">
+            <app-button
+              variant="stroked"
+              text="Mark All Read"
+              leadingIcon="mark_email_read"
+              [disabled]="!hasUnacknowledgedAlerts()"
+              (buttonClick)="markAllAlertsAsRead()">
+            </app-button>
+          </div>
+
+          @if (securityAlerts().length === 0) {
+            <div class="empty-state">
+              <mat-icon class="empty-icon">shield</mat-icon>
+              <h3>No security alerts</h3>
+              <p>Your system is secure with no active alerts</p>
+            </div>
+          } @else {
+            <div class="alerts-list">
+              @for (alert of securityAlerts(); track alert.id) {
+                <app-card
+                  variant="outlined"
+                  size="small"
+                  [state]="getAlertState(alert.severity)"
+                  class="alert-card">
+
+                  <div class="alert-header">
+                    <div class="alert-info">
+                      <mat-icon [class]="getSeverityIconClass(alert.severity)">
+                        {{ getSeverityIcon(alert.severity) }}
+                      </mat-icon>
+                      <div class="alert-details">
+                        <div class="alert-type">{{ alert.alertType }}</div>
+                        <div class="alert-time">{{ alert.createdDate | date:'short' }}</div>
+                      </div>
+                    </div>
+                    <div class="alert-status">
+                      @if (alert.isAcknowledged) {
+                        <mat-chip color="primary">Acknowledged</mat-chip>
+                      } @else {
+                        <mat-chip color="warn">Pending</mat-chip>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="alert-message">{{ alert.description }}</div>
+
+                  <div slot="actions" class="alert-actions">
+                    @if (!alert.isAcknowledged) {
+                      <app-button
+                        variant="stroked"
+                        size="small"
+                        text="Acknowledge"
+                        (buttonClick)="acknowledgeAlert(alert.id)">
+                      </app-button>
+                    }
+                    <app-button
+                      variant="stroked"
+                      size="small"
+                      text="View Details"
+                      (buttonClick)="viewAlertDetails(alert)">
+                    </app-button>
+                  </div>
+                </app-card>
+              }
+            </div>
+          }
+        </app-card>
+      </div>
+    </mat-tab>
+
+    <!-- Configuration Tab -->
+    <mat-tab label="Configuration">
+      <div class="config-content">
+        <form [formGroup]="configForm" (ngSubmit)="saveConfiguration()">
+          <!-- Password Policy -->
+          <app-card title="Password Policy" subtitle="Configure password requirements" variant="outlined">
+            <div class="config-grid">
+              <app-input
+                label="Minimum Length"
+                type="number"
+                formControlName="minPasswordLength"
+                size="medium">
+              </app-input>
+
+              <app-input
+                label="Max Failed Attempts"
+                type="number"
+                formControlName="maxFailedAttempts"
+                size="medium">
+              </app-input>
+
+              <app-input
+                label="Password Expiry (Days)"
+                type="number"
+                formControlName="passwordExpiryDays"
+                size="medium">
+              </app-input>
+            </div>
+          </app-card>
+
+          <!-- Session Policy -->
+          <app-card title="Session Policy" subtitle="Configure session timeouts and limits" variant="outlined">
+            <div class="config-grid">
+              <app-input
+                label="Session Timeout (Minutes)"
+                type="number"
+                formControlName="sessionTimeoutMinutes"
+                size="medium">
+              </app-input>
+
+              <app-input
+                label="Max Concurrent Sessions"
+                type="number"
+                formControlName="maxConcurrentSessions"
+                size="medium">
+              </app-input>
+            </div>
+          </app-card>
+
+          <!-- Risk Thresholds -->
+          <app-card title="Risk Thresholds" subtitle="Configure security risk detection levels" variant="outlined">
+            <div class="config-grid">
+              <app-input
+                label="Low Risk Threshold"
+                type="number"
+                formControlName="lowRiskThreshold"
+                size="medium">
+              </app-input>
+
+              <app-input
+                label="Medium Risk Threshold"
+                type="number"
+                formControlName="mediumRiskThreshold"
+                size="medium">
+              </app-input>
+
+              <app-input
+                label="High Risk Threshold"
+                type="number"
+                formControlName="highRiskThreshold"
+                size="medium">
+              </app-input>
+            </div>
+          </app-card>
+
+          <!-- Save Actions -->
+          <div class="config-actions">
+            <app-button
+              variant="stroked"
+              text="Reset to Defaults"
+              (buttonClick)="resetToDefaults()">
+            </app-button>
+            <app-button
+              variant="raised"
+              color="primary"
+              text="Save Configuration"
+              [loading]="isSavingConfig()"
+              [disabled]="configForm.invalid"
+              type="submit">
+            </app-button>
+          </div>
+        </form>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

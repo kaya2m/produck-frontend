@@ -1,0 +1,282 @@
+/* Updated for new page layout standards */
+.page-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  gap: 20px;
+}
+
+.title-section h1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 500;
+  color: #1976d2;
+}
+
+.title-section mat-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+}
+
+.title-section p {
+  margin: 8px 0 0 0;
+  color: #666;
+  font-size: 16px;
+}
+
+.actions-section {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.grid-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* All grid-related styles removed - handled by data-grid component */
+
+/* Dialog Styles */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.dialog-container {
+  background: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.account-dialog {
+  max-width: 900px;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 0 24px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.dialog-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+  color: #333;
+}
+
+.dialog-form {
+  padding: 0 24px 24px 24px;
+}
+
+.form-grid {
+  display: grid;
+  gap: 32px;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+  border-bottom: 2px solid #1976d2;
+  padding-bottom: 8px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-row mat-form-field {
+  flex: 1;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Menu Styles */
+.delete-action {
+  color: #d32f2f;
+}
+
+.delete-action mat-icon {
+  color: #d32f2f;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .accounts-container {
+    padding: 16px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-form {
+    flex-direction: column;
+  }
+
+  .filter-form mat-form-field {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .form-row {
+    flex-direction: column;
+  }
+
+  .dialog-container {
+    margin: 10px;
+    max-width: calc(100vw - 20px);
+  }
+
+  .accounts-table {
+    min-width: 600px;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+}
+
+/* Tab Styles */
+.account-tabs {
+  margin-bottom: 24px;
+}
+
+.account-tabs ::ng-deep .mat-mdc-tab-group {
+  background: transparent;
+}
+
+.account-tabs ::ng-deep .mat-mdc-tab-header {
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 20px;
+}
+
+.account-tabs ::ng-deep .mat-mdc-tab-label {
+  color: #666;
+  font-weight: 500;
+  min-width: 120px;
+  padding: 12px 24px;
+}
+
+.account-tabs ::ng-deep .mat-mdc-tab-label.mdc-tab--active {
+  color: #1976d2;
+}
+
+.account-tabs ::ng-deep .mat-mdc-tab-body-wrapper {
+  flex-grow: 1;
+}
+
+.tab-content {
+  padding: 20px 0;
+  min-height: 300px;
+}
+
+.tab-content .form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.tab-content .form-row mat-form-field {
+  flex: 1;
+}
+
+.tab-content .full-width {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 480px) {
+  .dialog-header {
+    padding: 16px 16px 0 16px;
+  }
+
+  .dialog-form {
+    padding: 0 16px 16px 16px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .page-title mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .tab-content .form-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .account-tabs ::ng-deep .mat-mdc-tab-label {
+    min-width: 80px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}

@@ -56,10 +56,10 @@ export interface ApiResponse<T = any> {
 }
 
 export interface PaginatedResponse<T = any> {
-  data: T[];
+  items: T[];
   totalCount: number;
   pageSize: number;
-  currentPage: number;
+  pageNumber: number;
   totalPages: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;

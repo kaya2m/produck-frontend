@@ -1,7 +1,8 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
-  name: 'crmCurrency'
+  name: 'crmCurrency',
+  standalone: true
 })
 export class CrmCurrencyPipe implements PipeTransform {
   transform(
@@ -33,7 +34,8 @@ export class CrmCurrencyPipe implements PipeTransform {
 }
 
 @Pipe({
-  name: 'percentage'
+  name: 'percentage',
+  standalone: true
 })
 export class PercentagePipe implements PipeTransform {
   transform(

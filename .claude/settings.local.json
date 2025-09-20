@@ -11,7 +11,21 @@
       "Bash(lsof:*)",
       "Bash(xargs kill:*)",
       "Bash(npm install:*)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(timeout 10 npm run start)",
+      "Bash(curl:*)",
+      "Bash(dotnet run:*)",
+      "Bash(dotnet build)",
+      "Bash(dotnet clean:*)",
+      "Read(//mnt/c/Projects/Produck/**)",
+      "Bash(tree:*)",
+      "Bash(timeout:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run:*)",
+      "Bash(node:*)",
+      "Bash(grep:*)",
+      "Bash(ng cache:*)"
     ],
     "deny": [],
     "ask": []

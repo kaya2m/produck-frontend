@@ -129,6 +129,7 @@ export enum AddressType {
 export interface Lead extends BaseEntity {
   firstName: string;
   lastName: string;
+  fullName?: string;
   companyName?: string;
   email: string; // required, unique
   phone?: string;
@@ -145,6 +146,7 @@ export interface Lead extends BaseEntity {
   notes?: string;
   assignedUserId?: string;
   assignedUser?: User;
+  statusId?: string;
 
   // Scoring system
   leadScore: number; // 0-1000 (algorithmic)

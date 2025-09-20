@@ -1,0 +1,142 @@
+<div class="teams-container">
+  <!-- Header -->
+  <div slot="actions">
+    <app-button
+      variant="raised"
+      color="primary"
+      text="Create Team"
+      leadingIcon="add"
+      (buttonClick)="toggleCreateForm()">
+    </app-button>
+  </div>
+
+  <!-- Create Team Form -->
+  @if (showCreateForm) {
+    <app-card [title]="editingTeam ? 'Edit Team' : 'Create New Team'" variant="outlined" class="create-form-card">
+      <form [formGroup]="createTeamForm" (ngSubmit)="createTeam()" class="team-form">
+        <div class="form-row">
+          <app-input
+            label="Team Name"
+            placeholder="Enter team name"
+            formControlName="name"
+            variant="outline"
+            size="medium"
+            [required]="true">
+          </app-input>
+        </div>
+
+        <div class="form-row">
+          <app-input
+            label="Description"
+            placeholder="Enter team description"
+            formControlName="description"
+            variant="outline"
+            size="medium"
+            [multiline]="true"
+            [rows]="3">
+          </app-input>
+        </div>
+
+        <div class="form-actions">
+          <app-button
+            variant="stroked"
+            text="Cancel"
+            (buttonClick)="cancelCreate()">
+          </app-button>
+          <app-button
+            variant="raised"
+            color="primary"
+            [text]="editingTeam ? 'Update Team' : 'Create Team'"
+            [loading]="isLoading()"
+            [disabled]="createTeamForm.invalid"
+            type="submit">
+          </app-button>
+        </div>
+      </form>
+    </app-card>
+  }
+
+  <!-- Teams List -->
+  <app-card title="Teams" [subtitle]="teams().length + ' teams found'" variant="default">
+    @if (teams().length === 0) {
+      <div class="empty-state">
+        <mat-icon class="empty-icon">groups</mat-icon>
+        <h3 class="empty-title">No teams found</h3>
+        <p class="empty-message">Create your first team to get started</p>
+        <app-button
+          variant="raised"
+          color="primary"
+          text="Create First Team"
+          leadingIcon="add"
+          (buttonClick)="toggleCreateForm()">
+        </app-button>
+      </div>
+    } @else {
+      <div class="teams-grid">
+        @for (team of teams(); track team.id) {
+          <app-card variant="outlined" size="medium" [hover]="true" class="team-card">
+            <div class="team-header">
+              <h3 class="team-name">{{ team.name }}</h3>
+              <button mat-icon-button [matMenuTriggerFor]="teamMenu" [matMenuTriggerData]="{team: team}">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #teamMenu="matMenu">
+                <ng-template matMenuContent let-team="team">
+                  <button mat-menu-item (click)="editTeam(team)">
+                    <mat-icon>edit</mat-icon>
+                    <span>Edit Team</span>
+                  </button>
+                  <button mat-menu-item (click)="viewMembers(team)">
+                    <mat-icon>group</mat-icon>
+                    <span>Manage Members</span>
+                  </button>
+                  <button mat-menu-item (click)="toggleTeamStatus(team)">
+                    <mat-icon>{{ team.isActive ? 'pause' : 'play_arrow' }}</mat-icon>
+                    <span>{{ team.isActive ? 'Deactivate' : 'Activate' }}</span>
+                  </button>
+                  <mat-divider></mat-divider>
+                  <button mat-menu-item (click)="deleteTeam(team.id)" class="danger">
+                    <mat-icon>delete</mat-icon>
+                    <span>Delete Team</span>
+                  </button>
+                </ng-template>
+              </mat-menu>
+            </div>
+
+            @if (team.description) {
+              <p class="team-description">{{ team.description }}</p>
+            }
+
+            <div class="team-stats">
+              <div class="stat-item">
+                <mat-icon>group</mat-icon>
+                <span>{{ team.memberCount || 0 }} members</span>
+              </div>
+              <div class="status-badge" [class]="team.isActive ? 'active' : 'inactive'">
+                <mat-icon>{{ team.isActive ? 'check_circle' : 'pause_circle_outline' }}</mat-icon>
+                <span>{{ team.isActive ? 'Active' : 'Inactive' }}</span>
+              </div>
+            </div>
+
+            <div slot="actions" class="team-actions">
+              <app-button
+                variant="stroked"
+                size="small"
+                text="Manage"
+                leadingIcon="settings"
+                (buttonClick)="viewMembers(team)">
+              </app-button>
+              <app-button
+                variant="stroked"
+                size="small"
+                text="Edit"
+                leadingIcon="edit"
+                (buttonClick)="editTeam(team)">
+              </app-button>
+            </div>
+          </app-card>
+        }
+      </div>
+    }
+  </app-card>
+</div>

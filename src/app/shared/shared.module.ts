@@ -41,7 +41,15 @@ import { ClipboardModule } from '@angular/cdk/clipboard';
 // AG-Grid
 import { AgGridAngular } from 'ag-grid-angular';
 
-// Custom Pipes - will be added later
+// Custom UI Components
+import { InputComponent } from './components/ui/input/input.component';
+import { ButtonComponent } from './components/ui/button/button.component';
+import { CardComponent } from './components/ui/card/card.component';
+import { ModalComponent } from './components/ui/modal/modal.component';
+import { TableComponent } from './components/ui/table/table.component';
+
+// Custom Pipes
+import { CrmCurrencyPipe, PercentagePipe } from './pipes/currency.pipe';
 
 const MATERIAL_MODULES = [
   MatButtonModule,
@@ -85,16 +93,30 @@ const THIRD_PARTY_MODULES = [
   AgGridAngular
 ];
 
+const CUSTOM_COMPONENTS = [
+  InputComponent,
+  ButtonComponent,
+  CardComponent,
+  ModalComponent,
+  TableComponent
+];
+
+const CUSTOM_PIPES = [
+  CrmCurrencyPipe,
+  PercentagePipe
+];
+
 @NgModule({
-  declarations: [
-  ],
+  declarations: [],
   imports: [
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
     ...MATERIAL_MODULES,
     ...CDK_MODULES,
-    ...THIRD_PARTY_MODULES
+    ...THIRD_PARTY_MODULES,
+    ...CUSTOM_COMPONENTS,
+    ...CUSTOM_PIPES
   ],
   exports: [
     CommonModule,
@@ -102,7 +124,9 @@ const THIRD_PARTY_MODULES = [
     ReactiveFormsModule,
     ...MATERIAL_MODULES,
     ...CDK_MODULES,
-    ...THIRD_PARTY_MODULES
+    ...THIRD_PARTY_MODULES,
+    ...CUSTOM_COMPONENTS,
+    ...CUSTOM_PIPES
   ]
 })
 export class SharedModule { }

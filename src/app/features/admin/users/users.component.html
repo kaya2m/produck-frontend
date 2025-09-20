@@ -1,0 +1,66 @@
+<div class="users-container m-2">
+   <div class="header-actions">
+        <button mat-raised-button
+                color="primary"
+                (click)="openCreateUserDialog()"
+                class="create-button">
+          <mat-icon>person_add</mat-icon>
+          Add User
+        </button>
+      </div>
+  <!-- Users Table -->
+  <mat-card class="table-card">
+    <mat-card-content>
+      @if (isLoading()) {
+        <div class="loading-state">
+          <mat-icon class="loading-icon">refresh</mat-icon>
+          <p>Loading users...</p>
+        </div>
+      } @else if (!isLoading() && filteredUsers().length === 0) {
+        <div class="empty-state">
+          <mat-icon>people_outline</mat-icon>
+          <h3>No Users Found</h3>
+          <p>
+            @if (hasFilters()) {
+              No users found matching your current filters.
+            } @else {
+              Create your first user to get started.
+            }
+          </p>
+          <button mat-raised-button
+                  color="primary"
+                  (click)="openCreateUserDialog()">
+            <mat-icon>person_add</mat-icon>
+            Add User
+          </button>
+        </div>
+      } @else {
+        <div class="grid-container">
+          <app-data-grid
+            [data]="filteredUsers()"
+            [columns]="gridColumns"
+            [actions]="gridActions"
+            [config]="gridConfig"
+            [loading]="isLoading()">
+
+            <!-- Custom Toolbar -->
+            <ng-template #toolbar>
+              <div class="grid-toolbar-content">
+                <div class="toolbar-left">
+                  <h3>Kullanıcılar ({{ filteredUsers().length }})</h3>
+                </div>
+                <div class="toolbar-right">
+                  <button mat-icon-button
+                          matTooltip="Yenile"
+                          (click)="refreshUsers()">
+                    <mat-icon>refresh</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </ng-template>
+          </app-data-grid>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

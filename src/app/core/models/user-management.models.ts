@@ -1,8 +1,85 @@
 export interface Role {
   id: string;
   name: string;
-  normalizedName: string;
   description?: string;
+}
+
+export interface Permission {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+}
+
+export interface RoleWithPermissions extends Role {
+  permissions: Permission[];
+}
+
+export interface CreateRoleRequest {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateRoleRequest {
+  name: string;
+  description?: string;
+}
+
+export interface CreateRoleResponse {
+  roleId: string;
+  success: boolean;
+  errors: string[];
+}
+
+export interface UpdateRoleResponse {
+  success: boolean;
+  errors: string[];
+}
+
+export interface AssignPermissionsRequest {
+  permissionIds: string[];
+}
+
+export interface AssignPermissionsResponse {
+  success: boolean;
+  assignedPermissions: string[];
+  errors: string[];
+}
+
+export interface RemovePermissionsRequest {
+  permissionIds: string[];
+}
+
+export interface RemovePermissionsResponse {
+  success: boolean;
+  errors: string[];
+}
+
+export interface CreatePermissionRequest {
+  name: string;
+  description: string;
+  category: string;
+}
+
+export interface UpdatePermissionRequest {
+  name: string;
+  description: string;
+  category: string;
+}
+
+export interface CreatePermissionResponse {
+  permissionId: string;
+  success: boolean;
+  errors: string[];
+}
+
+export interface UpdatePermissionResponse {
+  success: boolean;
+  errors: string[];
+}
+
+export interface InitializeDefaultPermissionsResponse {
+  message: string;
 }
 
 export interface CreateUserRequest {
@@ -39,6 +116,8 @@ export interface AssignRolesRequest {
 export interface CreateUserResponse {
   success: boolean;
   userId?: string;
+  username?: string;
+  email?: string;
   message?: string;
   errors?: string[];
 }
@@ -55,7 +134,7 @@ export interface AssignRolesToUserResponse {
   errors?: string[];
 }
 
-export interface UserDetailDto {
+export interface UserDto {
   id: string;
   username: string;
   email: string;
@@ -64,7 +143,13 @@ export interface UserDetailDto {
   phoneNumberConfirmed: boolean;
   twoFactorEnabled: boolean;
   isActive: boolean;
-  createdDate: Date;
+  createdDate: string;
+}
+
+export interface UserDetailDto extends UserDto {
   roles: Role[];
-  lastLoginAt?: Date;
+  lastModifiedDate: string;
+  lockoutEnd?: string;
+  lockoutEnabled: boolean;
+  accessFailedCount: number;
 }

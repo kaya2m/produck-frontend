@@ -181,7 +181,7 @@ export interface LeadCreateDto {
   industryId?: string;
   leadSourceId?: string;
   companySizeId?: string;
-  leadSource?: string;
+  leadSource: string;
   companySize?: string;
   budget?: number;
   timeline?: string;
@@ -191,7 +191,13 @@ export interface LeadCreateDto {
   assignedUserId?: string;
 }
 
-export interface LeadUpdateDto extends Partial<LeadCreateDto> {}
+export interface LeadUpdateDto extends Partial<Omit<LeadCreateDto, 'leadSource'>> {
+  id: string;
+  leadSource: string;
+  leadStatus: string;
+  statusId: string;
+  assignedUserId: string;
+}
 
 export interface LeadStatusUpdateDto {
   status: string;

@@ -192,7 +192,7 @@ interface Notification {
               <button mat-button [matMenuTriggerFor]="userMenu" class="user-profile-btn">
                 <div class="user-info">
                   <span class="user-name">{{ user.firstName }} {{ user.lastName }}</span>
-                  <span class="user-role">Administrator</span>
+                  <span class="user-role">{{ user.username }}</span>
                 </div>
                 <mat-icon class="dropdown-icon">keyboard_arrow_down</mat-icon>
               </button>
@@ -282,7 +282,7 @@ interface Notification {
           <div class="user-menu-info">
             <div class="user-menu-name">{{ user.firstName }} {{ user.lastName }}</div>
             <div class="user-menu-email">{{ user.email }}</div>
-            <div class="user-menu-role">Administrator</div>
+            <div class="user-menu-role">{{ user.username }}</div>
           </div>
         </div>
         <mat-divider></mat-divider>

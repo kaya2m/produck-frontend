@@ -1,0 +1,232 @@
+<div class="page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="actions-section">
+      <button mat-raised-button color="primary" (click)="openCreateContactDialog()">
+        <mat-icon>person_add</mat-icon>Yeni Kişi
+      </button>
+      <button mat-icon-button matTooltip="Excel'e Aktar" (click)="exportToExcel()">
+        <mat-icon>download</mat-icon>
+      </button>
+      <button mat-icon-button matTooltip="Yenile" (click)="loadContacts()">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Data Grid -->
+  <div class="grid-section">
+    <app-data-grid
+      [data]="contacts()"
+      [columns]="gridColumns"
+      [actions]="gridActions"
+      [config]="gridConfig"
+      [loading]="loading()"
+      [totalCount]="totalCount()"
+      [pageSize]="pageSize()"
+      [currentPage]="pageNumber()"
+      [serverSidePagination]="true"
+      [title]="'Kişiler'"
+      [showDefaultToolbar]="true"
+      [enableQuickFilter]="true"
+      (pageChanged)="onPageChange($event)">
+    </app-data-grid>
+  </div>
+</div>
+
+<!-- Create/Edit Contact Dialog -->
+@if (showContactDialog()) {
+  <div class="dialog-overlay" (click)="closeContactDialog()">
+    <div class="dialog-container contact-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>{{ editingContact() ? 'Kişi Düzenle' : 'Yeni Kişi Oluştur' }}</h2>
+        <button mat-icon-button (click)="closeContactDialog()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="contactForm" (ngSubmit)="saveContact()" class="dialog-form">
+        <mat-tab-group class="contact-tabs" animationDuration="300ms">
+
+          <!-- Tab 1: Temel Bilgiler -->
+          <mat-tab label="Temel Bilgiler">
+            <div class="tab-content">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Hesap *</mat-label>
+                <input matInput
+                       placeholder="Hesap ara..."
+                       formControlName="accountId"
+                       [matAutocomplete]="accountAutocomplete">
+                <mat-autocomplete #accountAutocomplete="matAutocomplete" [displayWith]="displayAccountFn">
+                  @for (account of filteredAccounts(); track account.id) {
+                    <mat-option [value]="account.id">
+                      <span>{{ account.name }}</span>
+                    </mat-option>
+                  }
+                </mat-autocomplete>
+                <mat-error *ngIf="contactForm.get('accountId')?.hasError('required')">
+                  Hesap seçimi gereklidir
+                </mat-error>
+              </mat-form-field>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Hitap</mat-label>
+                  <mat-select formControlName="salutation">
+                    <mat-option value="">Seçiniz</mat-option>
+                    @for (salutation of salutations; track salutation.value) {
+                      <mat-option [value]="salutation.value">{{ salutation.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Ad *</mat-label>
+                  <input matInput formControlName="firstName" placeholder="İsim">
+                  <mat-error *ngIf="contactForm.get('firstName')?.hasError('required')">
+                    Ad gereklidir
+                  </mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Soyad *</mat-label>
+                  <input matInput formControlName="lastName" placeholder="Soyisim">
+                  <mat-error *ngIf="contactForm.get('lastName')?.hasError('required')">
+                    Soyad gereklidir
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Unvan</mat-label>
+                  <input matInput formControlName="title" placeholder="Pozisyon">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Departman</mat-label>
+                  <mat-select formControlName="department">
+                    <mat-option value="">Seçiniz</mat-option>
+                    @for (dept of departments; track dept.value) {
+                      <mat-option [value]="dept.value">{{ dept.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Durum *</mat-label>
+                  <mat-select formControlName="status">
+                    @for (status of contactStatuses; track status.value) {
+                      <mat-option [value]="status.value">{{ status.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            </div>
+          </mat-tab>
+
+          <!-- Tab 2: İletişim Bilgileri -->
+          <mat-tab label="İletişim">
+            <div class="tab-content">
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>İş E-postası</mat-label>
+                  <input matInput formControlName="businessEmail" placeholder="ornek@sirket.com">
+                  <mat-error *ngIf="contactForm.get('businessEmail')?.hasError('email')">
+                    Geçerli bir e-posta adresi giriniz
+                  </mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Kişisel E-posta</mat-label>
+                  <input matInput formControlName="personalEmail" placeholder="ornek@gmail.com">
+                  <mat-error *ngIf="contactForm.get('personalEmail')?.hasError('email')">
+                    Geçerli bir e-posta adresi giriniz
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>İş Telefonu</mat-label>
+                  <input matInput formControlName="businessPhone" placeholder="+90 212 555 0123">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Cep Telefonu</mat-label>
+                  <input matInput formControlName="mobilePhone" placeholder="+90 532 555 0123">
+                </mat-form-field>
+              </div>
+            </div>
+          </mat-tab>
+
+          <!-- Tab 3: Hiyerarşi ve Ek Bilgiler -->
+          <mat-tab label="Ek Bilgiler">
+            <div class="tab-content">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Rapor Verdiği Kişi</mat-label>
+                <input matInput
+                       placeholder="Kişi ara..."
+                       formControlName="reportsToContactId"
+                       [matAutocomplete]="reportsToAutocomplete">
+                <mat-autocomplete #reportsToAutocomplete="matAutocomplete" [displayWith]="displayContactFn">
+                  @for (contact of filteredReportsToContacts(); track contact.id) {
+                    <mat-option [value]="contact.id">
+                      <span>{{ contact.name }}</span>
+                    </mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Sorumlu Kullanıcı *</mat-label>
+                <input matInput
+                       placeholder="Kullanıcı ara..."
+                       formControlName="ownerUserId"
+                       [matAutocomplete]="userAutocomplete">
+                <mat-autocomplete #userAutocomplete="matAutocomplete" [displayWith]="displayUserFn">
+                  @for (user of filteredUsers(); track user.id) {
+                    <mat-option [value]="user.id">
+                      <span>{{ user.name }}</span>
+                    </mat-option>
+                  }
+                </mat-autocomplete>
+                <mat-error *ngIf="contactForm.get('ownerUserId')?.hasError('required')">
+                  Sorumlu kullanıcı gereklidir
+                </mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Açıklama</mat-label>
+                <textarea matInput
+                          formControlName="description"
+                          placeholder="Kişi hakkında notlar"
+                          rows="3"></textarea>
+              </mat-form-field>
+            </div>
+          </mat-tab>
+
+        </mat-tab-group>
+
+        <div class="dialog-actions">
+          <button type="button"
+                  mat-button
+                  (click)="closeContactDialog()">
+            İptal
+          </button>
+          <button type="submit"
+                  mat-raised-button
+                  color="primary"
+                  [disabled]="contactForm.invalid || saving()">
+            @if (saving()) {
+              <mat-icon class="loading-icon">refresh</mat-icon>
+            } @else {
+              <mat-icon>{{ editingContact() ? 'save' : 'person_add' }}</mat-icon>
+            }
+            {{ editingContact() ? 'Güncelle' : 'Oluştur' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

@@ -1,0 +1,169 @@
+<div class="crm-grid" (contextmenu)="preventContextMenu($event)">
+  @if (toolbarTemplate || showDefaultToolbar) {
+    <header class="crm-grid__toolbar">
+      @if (toolbarTemplate) {
+        <ng-container [ngTemplateOutlet]="toolbarTemplate"></ng-container>
+      } @else {
+        <div class="crm-grid__toolbar-default">
+          <div class="crm-grid__title">
+            <h3>{{ title || 'Veri Listesi' }}</h3>
+            @if (showRowCount) {
+              <span class="crm-grid__row-count">{{ rowCount }} kayıt</span>
+            }
+          </div>
+
+          <div class="crm-grid__actions">
+            @if (enableQuickFilter) {
+              <div class="crm-grid__quick-filter">
+                <mat-icon>search</mat-icon>
+                <input
+                  type="text"
+                  [value]="quickFilterValue"
+                  (input)="onQuickFilterChanged($event)"
+                  [placeholder]="quickFilterPlaceholder"
+                  class="crm-grid__quick-filter-input">
+                @if (quickFilterValue) {
+                  <button type="button" mat-icon-button (click)="clearQuickFilter()" matTooltip="Filtreyi temizle">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                }
+              </div>
+            }
+
+            @if (config.enableExport) {
+              <button mat-icon-button [matMenuTriggerFor]="exportMenu ?? null" matTooltip="Dışa aktar">
+                <mat-icon>download</mat-icon>
+              </button>
+            }
+
+            <button mat-icon-button (click)="refreshGrid()" matTooltip="Yenile">
+              <mat-icon>refresh</mat-icon>
+            </button>
+
+            @if (config.enableAutoSizeColumns) {
+              <button mat-icon-button (click)="autoSizeAllColumns()" matTooltip="Sütunları otomatik boyutlandır">
+                <mat-icon>view_column</mat-icon>
+              </button>
+            }
+
+            <button mat-icon-button (click)="clearAllFilters()" matTooltip="Filtreleri sıfırla">
+              <mat-icon>filter_list_off</mat-icon>
+            </button>
+
+            <button mat-icon-button [matMenuTriggerFor]="columnsMenu ?? null" matTooltip="Sütun ayarları">
+              <mat-icon>settings</mat-icon>
+            </button>
+          </div>
+        </div>
+      }
+    </header>
+  }
+
+  <section class="crm-grid__body">
+    <ag-grid-angular
+      class="ag-theme-alpine crm-grid__table"
+      [gridOptions]="gridOptions"
+      [columnDefs]="columnDefs"
+      [rowData]="data"
+      [style.height.px]="gridHeight"
+      oncontextmenu="return false"
+      (contextmenu)="onGridContextMenu($event)"
+      (gridReady)="onGridReady($event)"
+      (firstDataRendered)="onFirstDataRendered($event)"
+      (rowClicked)="onRowClicked($event)"
+      (rowDoubleClicked)="onRowDoubleClicked($event)"
+      (selectionChanged)="onSelectionChanged($event)"
+      (sortChanged)="onSortChanged($event)"
+      (filterChanged)="onFilterChanged($event)"
+      (cellClicked)="onCellClicked($event)"
+      (cellDoubleClicked)="onCellDoubleClicked($event)"
+      (rowSelected)="onRowSelected($event)"
+      (gridSizeChanged)="onGridSizeChanged($event)"
+      (paginationChanged)="onPaginationChanged($event)">
+    </ag-grid-angular>
+
+    @if (loading) {
+      <div class="crm-grid__loading">
+        <mat-spinner diameter="36"></mat-spinner>
+        <span>{{ loadingText || 'Veriler yükleniyor...' }}</span>
+      </div>
+    }
+  </section>
+
+  @if (serverSidePagination) {
+    <footer class="crm-grid__footer">
+      <div class="crm-grid__footer-meta">
+        <span>Toplam {{ totalCountState }} kayıt</span>
+        <span>Sayfa {{ currentPageState }} / {{ totalPages() }}</span>
+      </div>
+      <mat-paginator
+        [length]="totalCountState"
+        [pageIndex]="currentPageState - 1"
+        [pageSize]="pageSizeState"
+        [pageSizeOptions]="pageSizeOptions"
+        (page)="onMatPageChange($event)">
+      </mat-paginator>
+    </footer>
+  }
+</div>
+
+<!-- Export Menu -->
+@if (config.enableExport) {
+  <mat-menu #exportMenu="matMenu">
+    <button mat-menu-item (click)="exportToCsv()">
+      <mat-icon>description</mat-icon>
+      <span>CSV olarak indir</span>
+    </button>
+    <button mat-menu-item (click)="exportToExcel()">
+      <mat-icon>table_chart</mat-icon>
+      <span>Excel olarak indir</span>
+    </button>
+  </mat-menu>
+}
+
+<mat-menu #columnsMenu="matMenu" class="crm-grid__column-menu">
+  <div mat-menu-item class="crm-grid__column-menu-header">Sütun Görünürlüğü</div>
+  <mat-divider></mat-divider>
+  @for (column of columnDefs; track column.field) {
+    <button mat-menu-item
+            (click)="column.field && toggleColumn(column.field); $event.stopPropagation()"
+            [disabled]="!column.field">
+      <mat-icon>{{ column.field && isColumnVisible(column.field) ? 'visibility' : 'visibility_off' }}</mat-icon>
+      <span>{{ column.headerName }}</span>
+    </button>
+  }
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="resetColumns()">
+    <mat-icon>restore</mat-icon>
+    <span>Varsayılan sütun düzeni</span>
+  </button>
+</mat-menu>
+
+<!-- Context Menu -->
+@if (showContextMenu) {
+  <div class="crm-grid__context-overlay" (click)="hideContextMenu()">
+    <div class="crm-grid__context-menu"
+         [style.left.px]="contextMenuX"
+         [style.top.px]="contextMenuY"
+         (click)="$event.stopPropagation()">
+      @if (contextMenuRow && actions.length) {
+        @for (action of actions; track action.tooltip) {
+          @if (!action.visible || action.visible(contextMenuRow!)) {
+            <button class="crm-grid__context-item"
+                    [class.crm-grid__context-item--primary]="action.color === 'primary'"
+                    [class.crm-grid__context-item--accent]="action.color === 'accent'"
+                    [class.crm-grid__context-item--warn]="action.color === 'warn'"
+                    (click)="executeContextAction(action)"
+                    [disabled]="action.disabled && action.disabled(contextMenuRow!)">
+              <mat-icon>{{ action.icon }}</mat-icon>
+              <span>{{ action.tooltip }}</span>
+            </button>
+          }
+        }
+      } @else {
+        <div class="crm-grid__context-empty">İşlem bulunmuyor</div>
+      }
+    </div>
+  </div>
+}
+

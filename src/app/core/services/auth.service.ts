@@ -8,8 +8,7 @@ import {
   LoginRequest,
   LoginResponse,
   RegisterRequest,
-  RefreshTokenRequest,
-  ApiResponse
+  RefreshTokenRequest
 } from '../models/auth.models';
 import { environment } from '../../../environments/environment';
 
@@ -34,8 +33,9 @@ export class AuthService {
   ) {}
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.API_URL}/auth/login`, credentials)
+    return this.http.post<any>(`${this.API_URL}/auth/login`, credentials)
       .pipe(
+        map(response => this.mapLoginResponse(response)),
         tap(loginResponse => {
           this.setSession(loginResponse);
           this.currentUserSubject.next(loginResponse.user);
@@ -52,11 +52,13 @@ export class AuthService {
       );
   }
 
-  logout(): void {
+  logout(returnUrl?: string): void {
     this.clearSession();
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
-    this.router.navigate(['/login']);
+    this.router.navigate(['/login'], {
+      queryParams: returnUrl ? { returnUrl } : undefined
+    });
   }
 
   refreshToken(): Observable<LoginResponse> {
@@ -69,8 +71,9 @@ export class AuthService {
 
     const request: RefreshTokenRequest = { refreshToken };
 
-    return this.http.post<LoginResponse>(`${this.API_URL}/auth/refresh`, request)
+    return this.http.post<any>(`${this.API_URL}/auth/refresh`, request)
       .pipe(
+        map(response => this.mapLoginResponse(response)),
         tap(loginResponse => {
           this.setSession(loginResponse);
           this.currentUserSubject.next(loginResponse.user);
@@ -86,29 +89,14 @@ export class AuthService {
     const userData = localStorage.getItem(this.USER_KEY);
     if (userData) {
       try {
-        return JSON.parse(userData);
+        const parsedUser = JSON.parse(userData);
+        return {
+          ...parsedUser,
+          createdDate: parsedUser.createdDate ? new Date(parsedUser.createdDate) : new Date()
+        } as User;
       } catch {
         return null;
       }
-    }
-
-    // Demo auth için geçici user
-    if (localStorage.getItem('produck_demo_auth')) {
-      return {
-        id: 'demo-user-1',
-        username: 'admin',
-        email: 'admin@produck.com',
-        emailConfirmed: true,
-        phoneNumber: '+1234567890',
-        phoneNumberConfirmed: false,
-        twoFactorEnabled: false,
-        isActive: true,
-        createdDate: new Date(),
-        firstName: 'John',
-        lastName: 'Doe',
-        roles: ['admin', 'sales_manager'],
-        permissions: ['workflow.read', 'team.read', 'security.read']
-      };
     }
 
     return null;
@@ -175,5 +163,39 @@ export class AuthService {
     }
 
     return throwError(() => new Error(errorMessage));
+  }
+
+  private mapLoginResponse(response: any): LoginResponse {
+    const accessToken = response?.accessToken ?? response?.AccessToken ?? '';
+    const refreshToken = response?.refreshToken ?? response?.RefreshToken ?? '';
+    const expiresAtRaw = response?.expiresAt ?? response?.ExpiresAt;
+    const user = this.mapUser(response?.user ?? response?.User ?? {});
+
+    return {
+      accessToken,
+      refreshToken,
+      expiresAt: expiresAtRaw ? new Date(expiresAtRaw) : new Date(),
+      user
+    };
+  }
+
+  private mapUser(user: any): User {
+    return {
+      id: user?.id ?? user?.Id ?? '',
+      username: user?.username ?? user?.Username ?? '',
+      email: user?.email ?? user?.Email ?? '',
+      emailConfirmed: user?.emailConfirmed ?? user?.EmailConfirmed ?? false,
+      phoneNumber: user?.phoneNumber ?? user?.PhoneNumber,
+      phoneNumberConfirmed: user?.phoneNumberConfirmed ?? user?.PhoneNumberConfirmed ?? false,
+      twoFactorEnabled: user?.twoFactorEnabled ?? user?.TwoFactorEnabled ?? false,
+      isActive: user?.isActive ?? user?.IsActive ?? false,
+      createdDate: user?.createdDate ? new Date(user.createdDate) : user?.CreatedDate ? new Date(user.CreatedDate) : new Date(),
+      firstName: user?.firstName ?? user?.FirstName,
+      lastName: user?.lastName ?? user?.LastName,
+      roles: user?.roles ?? user?.Roles ?? [],
+      permissions: user?.permissions ?? user?.Permissions ?? [],
+      avatar: user?.avatar,
+      lastLoginAt: user?.lastLoginAt ? new Date(user.lastLoginAt) : undefined
+    } as User;
   }
 }

@@ -8,27 +8,11 @@ import {
   withHooks
 } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
-import { pipe, switchMap, tap, catchError, EMPTY } from 'rxjs';
+import { forkJoin, pipe, switchMap, tap, catchError, EMPTY } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { of } from 'rxjs';
-
-// Models
-export interface Lead {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  company: string;
-  title?: string;
-  status: 'new' | 'contacted' | 'qualified' | 'lost';
-  source: string;
-  value?: number;
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  assignedTo?: string;
-}
+import { LeadService } from '../core/services/lead.service';
+import { Lead, LeadStatus } from '../core/models/crm.models';
+import { LeadFilter, LeadCreateDto, LeadUpdateDto } from '../core/models/api-response.models';
 
 export interface LeadsFilter {
   status?: string;
@@ -79,16 +63,16 @@ export const LeadsStore = signalStore(
       const filters = store.filters();
 
       return leads.filter(lead => {
-        if (filters.status && lead.status !== filters.status) return false;
-        if (filters.source && lead.source !== filters.source) return false;
-        if (filters.assignedTo && lead.assignedTo !== filters.assignedTo) return false;
+        if (filters.status && lead.status.toLowerCase() !== filters.status.toLowerCase()) return false;
+        if (filters.source && (lead.leadSource ?? '').toLowerCase() !== filters.source.toLowerCase()) return false;
+        if (filters.assignedTo && (lead.assignedUserId ?? '').toLowerCase() !== filters.assignedTo.toLowerCase()) return false;
         if (filters.search) {
           const search = filters.search.toLowerCase();
           return (
             lead.firstName.toLowerCase().includes(search) ||
             lead.lastName.toLowerCase().includes(search) ||
             lead.email.toLowerCase().includes(search) ||
-            lead.company.toLowerCase().includes(search)
+            (lead.companyName ?? '').toLowerCase().includes(search)
           );
         }
         return true;
@@ -99,15 +83,15 @@ export const LeadsStore = signalStore(
     leadsByStatus: computed(() => {
       const leads = store.leads();
       return {
-        new: leads.filter(l => l.status === 'new').length,
-        contacted: leads.filter(l => l.status === 'contacted').length,
-        qualified: leads.filter(l => l.status === 'qualified').length,
-        lost: leads.filter(l => l.status === 'lost').length
+        new: leads.filter(l => l.status === LeadStatus.New).length,
+        contacted: leads.filter(l => l.status === LeadStatus.Contacted).length,
+        qualified: leads.filter(l => l.status === LeadStatus.Qualified).length,
+        lost: leads.filter(l => l.status === LeadStatus.Unqualified).length
       };
     }),
 
     totalValue: computed(() => {
-      return store.leads().reduce((sum, lead) => sum + (lead.value || 0), 0);
+      return store.leads().reduce((sum, lead) => sum + (lead.budget || 0), 0);
     }),
 
     // Pagination
@@ -131,124 +115,166 @@ export const LeadsStore = signalStore(
   })),
 
   // Methods
-  withMethods((store) => ({
+  withMethods((store) => {
+    const leadService = inject(LeadService);
+
+    const normalizeStatus = (status?: string): string | undefined => {
+      if (!status) {
+        return undefined;
+      }
+
+      const normalized = status.toLowerCase();
+      switch (normalized) {
+        case 'new':
+          return LeadStatus.New;
+        case 'contacted':
+          return LeadStatus.Contacted;
+        case 'qualified':
+          return LeadStatus.Qualified;
+        case 'lost':
+        case 'unqualified':
+          return LeadStatus.Unqualified;
+        case 'converted':
+          return LeadStatus.Converted;
+        default:
+          return status;
+      }
+    };
+
+    return {
     // CRUD Operations
     loadLeads: rxMethod<{ page?: number; filters?: LeadsFilter }>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap(({ page = 1, filters = {} }) => {
-          // Mock API call - replace with actual service
-          return new Promise<{ leads: Lead[]; totalCount: number }>((resolve) => {
-            setTimeout(() => {
-              const mockLeads: Lead[] = [
-                {
-                  id: '1',
-                  firstName: 'John',
-                  lastName: 'Doe',
-                  email: 'john.doe@example.com',
-                  phone: '+1 555-0123',
-                  company: 'Acme Corp',
-                  title: 'CEO',
-                  status: 'new',
-                  source: 'website',
-                  value: 50000,
-                  notes: 'Interested in enterprise solution',
-                  createdAt: new Date('2024-01-15'),
-                  updatedAt: new Date('2024-01-15'),
-                  assignedTo: 'user1'
-                },
-                {
-                  id: '2',
-                  firstName: 'Jane',
-                  lastName: 'Smith',
-                  email: 'jane.smith@techstart.com',
-                  phone: '+1 555-0124',
-                  company: 'TechStart Inc',
-                  title: 'CTO',
-                  status: 'contacted',
-                  source: 'referral',
-                  value: 75000,
-                  notes: 'Follow up scheduled for next week',
-                  createdAt: new Date('2024-01-16'),
-                  updatedAt: new Date('2024-01-17'),
-                  assignedTo: 'user2'
-                },
-                {
-                  id: '3',
-                  firstName: 'Mike',
-                  lastName: 'Johnson',
-                  email: 'mike@globaltech.com',
-                  phone: '+1 555-0125',
-                  company: 'GlobalTech',
-                  title: 'VP Sales',
-                  status: 'qualified',
-                  source: 'linkedin',
-                  value: 100000,
-                  notes: 'Ready to sign contract',
-                  createdAt: new Date('2024-01-14'),
-                  updatedAt: new Date('2024-01-18'),
-                  assignedTo: 'user1'
-                }
-              ];
+          const apiFilter: LeadFilter = {
+            pageNumber: page,
+            pageSize: store.pageSize(),
+            search: filters.search
+          };
 
-              resolve({ leads: mockLeads, totalCount: mockLeads.length });
-            }, 500);
-          });
-        }),
-        tap({
-          next: ({ leads, totalCount }: { leads: Lead[]; totalCount: number }) => {
-            patchState(store, {
-              leads,
-              totalCount,
-              loading: false
-            });
-          },
-          error: (error: any) => {
-            patchState(store, {
-              error: error.message || 'Failed to load leads',
-              loading: false
-            });
+          const normalizedStatus = normalizeStatus(filters.status);
+          if (normalizedStatus) {
+            apiFilter.status = normalizedStatus;
           }
+
+          if (filters.source) {
+            (apiFilter as any).leadSource = filters.source;
+          }
+
+          if (filters.assignedTo) {
+            apiFilter.assignedUserId = filters.assignedTo;
+          }
+
+          return leadService.getLeads(apiFilter).pipe(
+            catchError((error) => {
+              patchState(store, {
+                error: error.message || 'Failed to load leads',
+                loading: false
+              });
+              return EMPTY;
+            })
+          );
+        }),
+        tap((response) => {
+          if (!response) {
+            return;
+          }
+
+          patchState(store, {
+            leads: response.items,
+            totalCount: response.totalCount,
+            currentPage: response.pageNumber,
+            pageSize: response.pageSize,
+            loading: false
+          });
         })
       )
     ),
 
-    addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>) => {
-      const newLead: Lead = {
-        ...lead,
-        id: Math.random().toString(36).substr(2, 9),
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      patchState(store, (state) => ({
-        leads: [...state.leads, newLead],
-        totalCount: state.totalCount + 1,
-        showAddDialog: false
-      }));
-    },
-
-    updateLead: (id: string, updates: Partial<Lead>) => {
-      patchState(store, (state) => ({
-        leads: state.leads.map(lead =>
-          lead.id === id
-            ? { ...lead, ...updates, updatedAt: new Date() }
-            : lead
+    addLead: rxMethod<LeadCreateDto>(
+      pipe(
+        tap(() => patchState(store, { loading: true, error: null })),
+        switchMap((payload) =>
+          leadService.createLead(payload).pipe(
+            catchError((error) => {
+              patchState(store, {
+                error: error.message || 'Failed to create lead',
+                loading: false
+              });
+              return EMPTY;
+            })
+          )
         ),
-        selectedLead: state.selectedLead?.id === id
-          ? { ...state.selectedLead, ...updates, updatedAt: new Date() }
-          : state.selectedLead,
-        showEditDialog: false
-      }));
-    },
+        tap((createdLead) => {
+          if (!createdLead) return;
 
-    deleteLead: (id: string) => {
-      patchState(store, (state) => ({
-        leads: state.leads.filter(lead => lead.id !== id),
-        totalCount: state.totalCount - 1,
-        selectedLead: state.selectedLead?.id === id ? null : state.selectedLead
-      }));
-    },
+          patchState(store, (state) => ({
+            leads: [createdLead, ...state.leads],
+            totalCount: state.totalCount + 1,
+            loading: false,
+            showAddDialog: false
+          }));
+        })
+      )
+    ),
+
+    updateLead: rxMethod<{ id: string; payload: LeadUpdateDto }>(
+      pipe(
+        tap(() => patchState(store, { loading: true, error: null })),
+        switchMap(({ id, payload }) =>
+          leadService.updateLead(id, payload).pipe(
+            catchError((error) => {
+              patchState(store, {
+                error: error.message || 'Failed to update lead',
+                loading: false
+              });
+              return EMPTY;
+            })
+          )
+        ),
+        tap((updatedLead) => {
+          if (!updatedLead) return;
+
+          patchState(store, (state) => ({
+            leads: state.leads.map(lead =>
+              lead.id === updatedLead.id ? updatedLead : lead
+            ),
+            selectedLead: state.selectedLead?.id === updatedLead.id ? updatedLead : state.selectedLead,
+            loading: false,
+            showEditDialog: false
+          }));
+        })
+      )
+    ),
+
+    deleteLead: rxMethod<string>(
+      pipe(
+        tap(() => patchState(store, { loading: true, error: null })),
+        switchMap((id) =>
+          leadService.deleteLead(id).pipe(
+            map(() => id),
+            catchError((error) => {
+              patchState(store, {
+                error: error.message || 'Failed to delete lead',
+                loading: false
+              });
+              return EMPTY;
+            })
+          )
+        ),
+        tap((id) => {
+          if (!id) return;
+
+          patchState(store, (state) => ({
+            leads: state.leads.filter(lead => lead.id !== id),
+            totalCount: Math.max(0, state.totalCount - 1),
+            selectedLead: state.selectedLead?.id === id ? null : state.selectedLead,
+            loading: false
+          }));
+        })
+      )
+    ),
 
     // Selection
     selectLead: (lead: Lead | null) => {
@@ -291,29 +317,69 @@ export const LeadsStore = signalStore(
     },
 
     // Bulk Operations
-    updateLeadStatus: (ids: string[], status: Lead['status']) => {
-      patchState(store, (state) => ({
-        leads: state.leads.map(lead =>
-          ids.includes(lead.id)
-            ? { ...lead, status, updatedAt: new Date() }
-            : lead
-        )
-      }));
-    },
+    updateLeadStatus: rxMethod<{ ids: string[]; status: Lead['status']; notes?: string }>(
+      pipe(
+        tap(() => patchState(store, { loading: true, error: null })),
+        switchMap(({ ids, status, notes }) => {
+          const requests = ids.map(id =>
+            leadService.updateLeadStatus(id, status, notes).pipe(
+              catchError((error) => {
+                patchState(store, {
+                  error: error.message || 'Failed to update lead status',
+                  loading: false
+                });
+                return EMPTY;
+              })
+            )
+          );
 
-    bulkDelete: (ids: string[]) => {
-      patchState(store, (state) => ({
-        leads: state.leads.filter(lead => !ids.includes(lead.id)),
-        totalCount: state.totalCount - ids.length
-      }));
-    }
-  })),
+          return forkJoin(requests).pipe(map(() => ({ ids, status })));
+        }),
+        tap(({ ids, status }) => {
+          patchState(store, (state) => ({
+            leads: state.leads.map(lead =>
+              ids.includes(lead.id)
+                ? { ...lead, status, lastModifiedDate: new Date() }
+                : lead
+            ),
+            loading: false
+          }));
+        })
+      )
+    ),
+
+    bulkDelete: rxMethod<string[]>(
+      pipe(
+        tap(() => patchState(store, { loading: true, error: null })),
+        switchMap((ids) =>
+          leadService.bulkDeleteLeads(ids).pipe(
+            map(() => ids),
+            catchError((error) => {
+              patchState(store, {
+                error: error.message || 'Failed to delete leads',
+                loading: false
+              });
+              return EMPTY;
+            })
+          )
+        ),
+        tap((ids) => {
+          patchState(store, (state) => ({
+            leads: state.leads.filter(lead => !ids.includes(lead.id)),
+            totalCount: Math.max(0, state.totalCount - ids.length),
+            loading: false
+          }));
+        })
+      )
+    )
+  };
+  }),
 
   // Lifecycle Hooks
   withHooks({
     onInit(store) {
       // Auto-load leads when store is initialized
-      store.loadLeads({});
+      store['loadLeads']({});
     }
   })
 );

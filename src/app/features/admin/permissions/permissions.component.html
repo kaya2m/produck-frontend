@@ -1,0 +1,193 @@
+<div class="permissions-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+
+
+      <div class="header-actions">
+        <button mat-raised-button
+                color="accent"
+                (click)="initializeDefaultPermissions()"
+                class="initialize-button"
+                [disabled]="initializing()">
+          @if (initializing()) {
+            <mat-icon class="loading-icon">refresh</mat-icon>
+          } @else {
+            <mat-icon>settings</mat-icon>
+          }
+          Initialize Defaults
+        </button>
+        <button mat-raised-button
+                color="primary"
+                (click)="openCreatePermissionDialog()"
+                class="create-button">
+          <mat-icon>add</mat-icon>
+          Create Permission
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Filter -->
+  <!-- <mat-card class="filter-card">
+    <mat-card-content>
+      <div class="filter-content">
+        <mat-form-field appearance="outline" class="category-filter">
+          <mat-label>Filter by Category</mat-label>
+          <mat-select [value]="selectedCategory()" (selectionChange)="filterByCategory($event.value)">
+            <mat-option value="">All Categories</mat-option>
+            @for (category of categories(); track category) {
+              <mat-option [value]="category">{{ category }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <div class="category-chips">
+          @for (category of categories(); track category) {
+            <mat-chip (click)="filterByCategory(category)"
+                     [class.active]="selectedCategory() === category">
+              {{ category }}
+              <span class="category-count">({{ getCategoryCount(category) }})</span>
+            </mat-chip>
+          }
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card> -->
+
+  <!-- Permissions Table -->
+  <mat-card class="table-card">
+    <mat-card-content>
+      @if (loading()) {
+        <div class="loading-state">
+          <mat-icon class="loading-icon">refresh</mat-icon>
+          <p>Loading permissions...</p>
+        </div>
+      } @else if (!loading() && filteredPermissions().length === 0) {
+        <div class="empty-state">
+          <mat-icon>security</mat-icon>
+          <h3>No Permissions Found</h3>
+          <p>
+            @if (selectedCategory()) {
+              No permissions found in "{{ selectedCategory() }}" category.
+            } @else {
+              Create your first permission to get started.
+            }
+          </p>
+          <button mat-raised-button
+                  color="primary"
+                  (click)="openCreatePermissionDialog()">
+            <mat-icon>add</mat-icon>
+            Create Permission
+          </button>
+        </div>
+      } @else {
+        <div class="grid-container">
+          <app-data-grid
+            [data]="filteredPermissions()"
+            [columns]="gridColumns"
+            [actions]="gridActions"
+            [config]="gridConfig"
+            [loading]="loading()"
+            >
+
+            <!-- Custom Toolbar -->
+            <ng-template #toolbar>
+              <div class="grid-toolbar-content">
+                <div class="toolbar-left">
+                  <h3>İzinler ({{ filteredPermissions().length }})</h3>
+                </div>
+                <div class="toolbar-right">
+                  <button mat-icon-button
+                          matTooltip="Yenile"
+                          (click)="loadPermissions()">
+                    <mat-icon>refresh</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </ng-template>
+          </app-data-grid>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>
+
+
+<!-- Create/Edit Permission Dialog -->
+@if (showPermissionDialog()) {
+  <div class="dialog-overlay" (click)="closePermissionDialog()">
+    <div class="dialog-container" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>{{ editingPermission() ? 'Edit Permission' : 'Create New Permission' }}</h2>
+        <button mat-icon-button (click)="closePermissionDialog()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="permissionForm" (ngSubmit)="savePermission()" class="dialog-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Permission Name</mat-label>
+          <input matInput formControlName="name" placeholder="e.g., users.read">
+          <mat-hint>Use dot notation (category.action)</mat-hint>
+          <mat-error *ngIf="permissionForm.get('name')?.hasError('required')">
+            Permission name is required
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea matInput
+                    formControlName="description"
+                    placeholder="Describe what this permission allows"
+                    rows="3"></textarea>
+          <mat-error *ngIf="permissionForm.get('description')?.hasError('required')">
+            Description is required
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Category</mat-label>
+          <mat-select formControlName="category">
+            @for (category of categories(); track category) {
+              <mat-option [value]="category">{{ category }}</mat-option>
+            }
+            <mat-option value="__new__">+ Create New Category</mat-option>
+          </mat-select>
+          <mat-error *ngIf="permissionForm.get('category')?.hasError('required')">
+            Category is required
+          </mat-error>
+        </mat-form-field>
+
+        @if (permissionForm.get('category')?.value === '__new__') {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>New Category Name</mat-label>
+            <input matInput formControlName="newCategory" placeholder="Enter new category name">
+            <mat-error *ngIf="permissionForm.get('newCategory')?.hasError('required')">
+              New category name is required
+            </mat-error>
+          </mat-form-field>
+        }
+
+        <div class="dialog-actions">
+          <button type="button"
+                  mat-button
+                  (click)="closePermissionDialog()">
+            Cancel
+          </button>
+          <button type="submit"
+                  mat-raised-button
+                  color="primary"
+                  [disabled]="permissionForm.invalid || saving()">
+            @if (saving()) {
+              <mat-icon class="loading-icon">refresh</mat-icon>
+            } @else {
+              <mat-icon>{{ editingPermission() ? 'save' : 'add' }}</mat-icon>
+            }
+            {{ editingPermission() ? 'Update' : 'Create' }} Permission
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

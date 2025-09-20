@@ -26,15 +26,15 @@ export const routes: Routes = [
       },
       {
         path: 'opportunities',
-        loadComponent: () => import('./features/dashboard/dashboard.component').then(c => c.DashboardComponent) // Geçici
+        loadComponent: () => import('./features/opportunities/opportunities.component').then(c => c.OpportunitiesComponent)
       },
       {
         path: 'accounts',
-        loadComponent: () => import('./features/accounts/accounts.component').then(c => c.AccountsComponent)
+        loadComponent: () => import('./features/crm/accounts/accounts.component').then(c => c.AccountsComponent)
       },
       {
         path: 'contacts',
-        loadComponent: () => import('./features/contacts/contacts.component').then(c => c.ContactsComponent)
+        loadComponent: () => import('./features/crm/contacts/contacts.component').then(c => c.ContactsComponent)
       },
       {
         path: 'pipeline',
@@ -76,12 +76,29 @@ export const routes: Routes = [
         path: 'admin',
         children: [
           {
+            path: '',
+            redirectTo: 'users',
+            pathMatch: 'full'
+          },
+          {
             path: 'users',
             loadComponent: () => import('./features/admin/users/users.component').then(c => c.UsersComponent)
           },
           {
             path: 'roles',
             loadComponent: () => import('./features/admin/roles/roles.component').then(c => c.RolesComponent)
+          },
+          {
+            path: 'permissions',
+            loadComponent: () => import('./features/admin/permissions/permissions.component').then(c => c.PermissionsComponent)
+          },
+          {
+            path: 'teams',
+            loadComponent: () => import('./features/admin/teams/teams.component').then(c => c.TeamsComponent)
+          },
+          {
+            path: 'security',
+            loadComponent: () => import('./features/admin/security/security.component').then(c => c.SecurityComponent)
           }
         ]
       }

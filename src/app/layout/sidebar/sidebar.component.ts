@@ -43,13 +43,11 @@ interface MenuItem {
     trigger('expandCollapse', [
       state('collapsed', style({
         height: '0px',
-        opacity: 0,
-        overflow: 'hidden'
+        opacity: 0
       })),
       state('expanded', style({
         height: '*',
-        opacity: 1,
-        overflow: 'visible'
+        opacity: 1
       })),
       transition('collapsed <=> expanded', [
         animate('200ms cubic-bezier(0.4, 0, 0.2, 1)')
@@ -208,7 +206,7 @@ interface MenuItem {
                 <div class="user-details">
                   <div class="user-name">{{ user.firstName }} {{ user.lastName }}</div>
                   <div class="user-email">{{ user.email }}</div>
-                  <div class="user-role">Administrator</div>
+                  <div class="user-role">{{ user.username }}</div>
                 </div>
               </div>
               <button mat-icon-button
@@ -320,6 +318,23 @@ interface MenuItem {
       max-height: 72px;
       flex-shrink: 0;
       box-sizing: border-box;
+    }
+
+    .sidebar-content.collapsed .sidebar-header {
+      padding: 16px 8px;
+      justify-content: center;
+      position: relative;
+    }
+
+    .sidebar-content.collapsed .logo-section {
+      flex: none;
+    }
+
+    .sidebar-content.collapsed .collapse-button {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
     }
 
     .logo-section {
@@ -560,6 +575,7 @@ interface MenuItem {
       gap: 2px;
       border-left: 2px solid #f1f5f9;
       padding-left: 12px;
+      overflow: hidden; /* Static overflow setting for animation */
     }
 
     .submenu-item {
@@ -780,15 +796,58 @@ interface MenuItem {
     .sidebar-content.collapsed .nav-item {
       padding: 12px;
       justify-content: center;
+      min-width: 44px;
+      width: 44px;
+      margin: 0 auto 2px auto;
     }
 
     .sidebar-content.collapsed .nav-item.active {
       border-left: none;
-      padding-left: 12px;
+      padding: 12px;
+      background: #eff6ff;
+      color: #2563eb;
+    }
+
+    .sidebar-content.collapsed .nav-item.active .nav-icon {
+      color: #2563eb;
     }
 
     .sidebar-content.collapsed .group-header {
       display: none;
+    }
+
+    .sidebar-content.collapsed .navigation {
+      padding: 8px 4px 0 4px;
+    }
+
+    .sidebar-content.collapsed .nav-items {
+      align-items: center;
+    }
+
+    /* Collapsed durumda Quick Create Section */
+    .sidebar-content.collapsed .quick-create-section {
+      padding: 16px 8px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .sidebar-content.collapsed .quick-create-fab {
+      margin: 0;
+    }
+
+    /* Collapsed durumda User Section */
+    .sidebar-content.collapsed .user-section {
+      padding: 16px 8px;
+    }
+
+    .sidebar-content.collapsed .user-info-collapsed {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    .sidebar-content.collapsed .user-avatar-collapsed {
+      margin: 0;
     }
 
     /* Responsive */
@@ -862,6 +921,7 @@ export class SidebarComponent implements OnInit {
 
   // Modern Signal-based state
   isCollapsed = signal(false);
+  adminExpanded = false;
   expandedMenuItems = signal<string[]>([]);
 
   currentUser$ = this.authService.currentUser$;
@@ -1034,7 +1094,6 @@ export class SidebarComponent implements OnInit {
       label: 'Administration',
       icon: 'admin_panel_settings',
       route: '/admin',
-      permissions: ['admin.read'],
       group: 'admin',
       description: 'System administration and user management',
       children: [
@@ -1047,21 +1106,21 @@ export class SidebarComponent implements OnInit {
           label: 'Roles',
           icon: 'admin_panel_settings',
           route: '/admin/roles'
-        }
-      ]
-    },
-    {
-      label: 'Team Management',
-      icon: 'groups',
-      route: '/team',
-      permissions: ['team.read'],
-      group: 'admin',
-      description: 'User and team administration',
-      children: [
+        },
         {
-          label: 'Activity Log',
-          icon: 'history',
-          route: '/team/activity'
+          label: 'Permissions',
+          icon: 'key',
+          route: '/admin/permissions'
+        },
+        {
+          label: 'Teams',
+          icon: 'groups',
+          route: '/admin/teams'
+        },
+        {
+          label: 'Security',
+          icon: 'shield',
+          route: '/admin/security'
         }
       ]
     },
@@ -1205,7 +1264,10 @@ export class SidebarComponent implements OnInit {
   }
 
   getUserInitials(user: any): string {
-    return (user.firstName.charAt(0) + user.lastName.charAt(0)).toUpperCase();
+    if (!user) return '';
+    const firstName = user.firstName || '';
+    const lastName = user.lastName || '';
+    return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
   }
 
   navigateToProfile(): void {

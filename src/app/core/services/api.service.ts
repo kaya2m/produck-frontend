@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiResponse, PaginatedResponse } from '../models/auth.models';
+import { environment } from '../../../environments/environment';
 
 export interface QueryParams {
   [key: string]: string | number | boolean | string[] | undefined;
@@ -20,45 +21,45 @@ export interface PaginationParams {
   providedIn: 'root'
 })
 export class ApiService {
-  private readonly BASE_URL = 'https://localhost:7001/api';
+  private readonly BASE_URL = environment.api.baseUrl;
 
   constructor(private http: HttpClient) {}
 
   get<T>(endpoint: string, params?: QueryParams): Observable<T> {
     const httpParams = this.buildHttpParams(params);
-    return this.http.get<ApiResponse<T>>(`${this.BASE_URL}/${endpoint}`, { params: httpParams })
-      .pipe(map(response => response.data));
+    const url = endpoint.startsWith('/') ? `${this.BASE_URL}${endpoint}` : `${this.BASE_URL}/${endpoint}`;
+    return this.http.get<T>(url, { params: httpParams });
   }
 
   getPaginated<T>(endpoint: string, params?: PaginationParams & QueryParams): Observable<PaginatedResponse<T>> {
     const httpParams = this.buildHttpParams(params);
-    return this.http.get<ApiResponse<PaginatedResponse<T>>>(`${this.BASE_URL}/${endpoint}`, { params: httpParams })
-      .pipe(map(response => response.data));
+    const url = endpoint.startsWith('/') ? `${this.BASE_URL}${endpoint}` : `${this.BASE_URL}/${endpoint}`;
+    return this.http.get<PaginatedResponse<T>>(url, { params: httpParams });
   }
 
   post<T>(endpoint: string, data: any): Observable<T> {
-    return this.http.post<ApiResponse<T>>(`${this.BASE_URL}/${endpoint}`, data)
-      .pipe(map(response => response.data));
+    const url = endpoint.startsWith('/') ? `${this.BASE_URL}${endpoint}` : `${this.BASE_URL}/${endpoint}`;
+    return this.http.post<T>(url, data);
   }
 
   put<T>(endpoint: string, data: any): Observable<T> {
-    return this.http.put<ApiResponse<T>>(`${this.BASE_URL}/${endpoint}`, data)
-      .pipe(map(response => response.data));
+    const url = endpoint.startsWith('/') ? `${this.BASE_URL}${endpoint}` : `${this.BASE_URL}/${endpoint}`;
+    return this.http.put<T>(url, data);
   }
 
   patch<T>(endpoint: string, data: any): Observable<T> {
-    return this.http.patch<ApiResponse<T>>(`${this.BASE_URL}/${endpoint}`, data)
-      .pipe(map(response => response.data));
+    const url = endpoint.startsWith('/') ? `${this.BASE_URL}${endpoint}` : `${this.BASE_URL}/${endpoint}`;
+    return this.http.patch<T>(url, data);
   }
 
-  delete<T>(endpoint: string): Observable<T> {
-    return this.http.delete<ApiResponse<T>>(`${this.BASE_URL}/${endpoint}`)
-      .pipe(map(response => response.data));
+  delete<T>(endpoint: string, data?: any): Observable<T> {
+    const url = endpoint.startsWith('/') ? `${this.BASE_URL}${endpoint}` : `${this.BASE_URL}/${endpoint}`;
+    const options = data ? { body: data } : {};
+    return this.http.delete<T>(url, options);
   }
 
   upload<T>(endpoint: string, formData: FormData): Observable<T> {
-    return this.http.post<ApiResponse<T>>(`${this.BASE_URL}/${endpoint}`, formData)
-      .pipe(map(response => response.data));
+    return this.http.post<T>(`${this.BASE_URL}/${endpoint}`, formData);
   }
 
   download(endpoint: string, params?: QueryParams): Observable<Blob> {

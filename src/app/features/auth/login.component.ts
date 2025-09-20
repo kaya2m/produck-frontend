@@ -15,6 +15,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-login',
@@ -141,9 +142,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
               <mat-checkbox formControlName="rememberMe" color="primary">
                 Remember me
               </mat-checkbox>
-              <a routerLink="/auth/forgot-password" class="forgot-password-link">
-                Forgot password?
-              </a>
             </div>
 
             <button mat-raised-button
@@ -155,8 +153,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
                 <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
                 Signing in...
               } @else {
-                Sign In
-                <mat-icon>arrow_forward</mat-icon>
+                <ng-container>
+                  Sign In
+                  <mat-icon>arrow_forward</mat-icon>
+                </ng-container>
               }
             </button>
           </form>
@@ -375,16 +375,6 @@ import { MatTooltipModule } from '@angular/material/tooltip';
       font-size: 14px;
     }
 
-    .forgot-password-link {
-      color: #3b82f6;
-      text-decoration: none;
-      font-weight: 500;
-      transition: color 0.2s;
-    }
-
-    .forgot-password-link:hover {
-      color: #1d4ed8;
-    }
 
     .login-button {
       height: 44px;
@@ -531,56 +521,44 @@ export class LoginComponent {
     this.hidePassword.set(!this.hidePassword());
   }
 
-  async onLogin() {
+  onLogin() {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
     }
 
+    const formValue = this.loginForm.value;
+    const credentials: LoginRequest = {
+      username: formValue.username!,
+      password: formValue.password!
+    };
+
     this.isLoading.set(true);
 
-    try {
-      const formData = this.loginForm.value;
+    this.authService.login(credentials)
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        next: () => {
+          if (formValue.rememberMe) {
+            localStorage.setItem('produck_remember_me', 'true');
+          } else {
+            localStorage.removeItem('produck_remember_me');
+          }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+          this.snackBar.open('Welcome back!', 'Close', {
+            duration: 3000,
+            panelClass: ['success-snackbar']
+          });
 
-      // Mock successful login with demo user data
-      localStorage.setItem('produck_demo_auth', 'true');
-
-      // Create demo user for sidebar
-      const demoUser = {
-        id: 'demo-user-1',
-        email: formData.email,
-        firstName: 'John',
-        lastName: 'Doe',
-        roles: ['admin', 'sales_manager'],
-        permissions: ['workflow.read', 'team.read', 'security.read'],
-        isActive: true,
-        createdAt: new Date()
-      };
-
-      localStorage.setItem('produck_user', JSON.stringify(demoUser));
-
-      if (formData.rememberMe) {
-        localStorage.setItem('produck_remember_me', 'true');
-      }
-
-      this.snackBar.open('Welcome back!', 'Close', {
-        duration: 3000,
-        panelClass: ['success-snackbar']
+          this.router.navigate(['/dashboard']);
+        },
+        error: (error) => {
+          console.error('Login failed:', error);
+          this.snackBar.open(error.message || 'Login failed. Please check your credentials.', 'Close', {
+            duration: 5000,
+            panelClass: ['error-snackbar']
+          });
+        }
       });
-
-      this.router.navigate(['/dashboard']);
-
-    } catch (error) {
-      console.error('Login failed:', error);
-      this.snackBar.open('Login failed. Please check your credentials.', 'Close', {
-        duration: 5000,
-        panelClass: ['error-snackbar']
-      });
-    } finally {
-      this.isLoading.set(false);
-    }
   }
 }

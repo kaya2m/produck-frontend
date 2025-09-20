@@ -1,0 +1,374 @@
+/* Contact Management Page Styles - Consistent with Accounts */
+.page-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  gap: 20px;
+}
+
+.title-section h1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 500;
+  color: #1976d2;
+}
+
+.title-section mat-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+}
+
+.title-section p {
+  margin: 8px 0 0 0;
+  color: #666;
+  font-size: 16px;
+}
+
+.actions-section {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Filters Section */
+.filters-section {
+  margin-bottom: 20px;
+}
+
+.filter-form {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-form mat-form-field {
+  min-width: 200px;
+}
+
+/* Grid Section */
+.grid-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Dialog Styles */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.dialog-container {
+  background: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.contact-dialog {
+  max-width: 900px;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 0 24px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.dialog-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+  color: #333;
+}
+
+.dialog-form {
+  padding: 0 24px 24px 24px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-row mat-form-field {
+  flex: 1;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Tab Styles */
+.contact-tabs {
+  margin-bottom: 24px;
+}
+
+.contact-tabs ::ng-deep .mat-mdc-tab-group {
+  background: transparent;
+}
+
+.contact-tabs ::ng-deep .mat-mdc-tab-header {
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 20px;
+}
+
+.contact-tabs ::ng-deep .mat-mdc-tab-label {
+  color: #666;
+  font-weight: 500;
+  min-width: 120px;
+  padding: 12px 24px;
+}
+
+.contact-tabs ::ng-deep .mat-mdc-tab-label.mdc-tab--active {
+  color: #1976d2;
+}
+
+.contact-tabs ::ng-deep .mat-mdc-tab-body-wrapper {
+  flex-grow: 1;
+}
+
+.tab-content {
+  padding: 20px 0;
+  min-height: 300px;
+}
+
+.tab-content .form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.tab-content .form-row mat-form-field {
+  flex: 1;
+}
+
+.tab-content .full-width {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+/* Status Badge Styles */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-badge.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.status-badge.left-company {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Contact Info Styles */
+.contact-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.contact-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #1976d2;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.contact-details {
+  flex: 1;
+}
+
+.contact-name {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.contact-title {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 16px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-form {
+    flex-direction: column;
+  }
+
+  .filter-form mat-form-field {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .form-row {
+    flex-direction: column;
+  }
+
+  .dialog-container {
+    margin: 10px;
+    max-width: calc(100vw - 20px);
+  }
+
+  .title-section h1 {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dialog-header {
+    padding: 16px 16px 0 16px;
+  }
+
+  .dialog-form {
+    padding: 0 16px 16px 16px;
+  }
+
+  .title-section h1 {
+    font-size: 20px;
+  }
+
+  .title-section mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .tab-content .form-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .contact-tabs ::ng-deep .mat-mdc-tab-label {
+    min-width: 80px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+/* Form validation styles */
+.mat-mdc-form-field.mat-form-field-invalid .mat-mdc-text-field-wrapper {
+  background-color: #fef2f2;
+}
+
+.mat-mdc-form-field.mat-form-field-invalid .mat-mdc-floating-label {
+  color: #dc2626;
+}
+
+/* Autocomplete styles */
+.mat-mdc-autocomplete-panel {
+  max-height: 200px;
+}
+
+.mat-mdc-option {
+  line-height: 1.5;
+}
+
+/* Export and action buttons */
+.actions-section button {
+  min-width: auto;
+}
+
+.actions-section .mat-mdc-icon-button {
+  width: 40px;
+  height: 40px;
+}
+
+/* Grid customizations */
+::ng-deep .ag-theme-alpine {
+  --ag-header-height: 48px;
+  --ag-row-height: 56px;
+  --ag-font-family: 'Roboto', sans-serif;
+}
+
+::ng-deep .ag-header-cell-text {
+  font-weight: 500;
+  color: #374151;
+}
+
+::ng-deep .ag-row {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+::ng-deep .ag-row:hover {
+  background-color: #f9fafb;
+}

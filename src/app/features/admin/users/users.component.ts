@@ -1,34 +1,33 @@
-import { Component, OnInit, signal, computed, viewChild, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 // Material Components
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
-import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule } from '@angular/material/paginator';
-import { MatSortModule } from '@angular/material/sort';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+
+// Custom UI Components
+import { DataGridComponent, DataGridColumn, DataGridAction, DataGridConfig } from '../../../shared/components/data-grid/data-grid.component';
+import { CellRendererHelpers } from '../../../shared/components/data-grid/cell-renderers';
 
 // Services
 import { UserManagementService } from '../../../core/services/user-management.service';
 import { RoleService } from '../../../core/services/role.service';
 
 // Models
-import { User } from '../../../core/models/auth.models';
-import { Role, CreateUserRequest, UpdateUserRequest, AssignRolesRequest } from '../../../core/models/user-management.models';
+import { Role, UserDetailDto } from '../../../core/models/user-management.models';
+
+// Dialog Components
+import { UserFormDialogComponent, UserFormDialogData } from './user-form-dialog/user-form-dialog.component';
+import { RoleAssignmentDialogComponent, RoleAssignmentDialogData } from './role-assignment-dialog/role-assignment-dialog.component';
 
 @Component({
   selector: 'app-users',
@@ -37,429 +36,149 @@ import { Role, CreateUserRequest, UpdateUserRequest, AssignRolesRequest } from '
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
-    MatCardModule,
-    MatButtonModule,
     MatIconModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatCheckboxModule,
+    MatButtonModule,
+    MatCardModule,
     MatDialogModule,
     MatSnackBarModule,
-    MatTableModule,
-    MatPaginatorModule,
-    MatSortModule,
     MatChipsModule,
-    MatSlideToggleModule,
     MatTooltipModule,
     MatMenuModule,
-    MatDividerModule
+    MatDividerModule,
+    DataGridComponent
   ],
   template: `
-    <div class="users-container">
-      <!-- Header -->
-      <div class="users-header">
-        <div class="header-title">
-          <h1>
-            <mat-icon>people</mat-icon>
-            User Management
-          </h1>
-          <p class="header-subtitle">
-            Manage system users, roles, and permissions
-          </p>
-        </div>
-
-        <div class="header-actions">
+    <div class="page-container">
+      <!-- Header - Updated for new standards -->
+      <div class="page-header">
+        <div class="actions-section">
           <button mat-raised-button color="primary" (click)="openCreateUserDialog()">
-            <mat-icon>person_add</mat-icon>
-            Add User
+            <mat-icon>person_add</mat-icon>Yeni Kullanıcı
           </button>
         </div>
       </div>
 
-      <!-- Filters -->
-      <mat-card class="filters-card">
-        <mat-card-content>
-          <div class="filters-row">
-            <mat-form-field appearance="outline" class="filter-field">
-              <mat-label>Search Users</mat-label>
-              <input matInput
-                     placeholder="Search by username, email..."
-                     [value]="searchTerm()"
-                     (input)="onSearchChange($event)">
-              <mat-icon matPrefix>search</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="filter-field">
-              <mat-label>Role</mat-label>
-              <mat-select [value]="roleFilter()" (selectionChange)="onRoleFilterChange($event.value)">
-                <mat-option value="">All Roles</mat-option>
-                @for (role of availableRoles(); track role.id) {
-                  <mat-option [value]="role.id">{{ role.name }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="filter-field">
-              <mat-label>Status</mat-label>
-              <mat-select [value]="statusFilter()" (selectionChange)="onStatusFilterChange($event.value)">
-                <mat-option value="">All Status</mat-option>
-                <mat-option value="active">Active</mat-option>
-                <mat-option value="inactive">Inactive</mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            @if (hasFilters()) {
-              <button mat-stroked-button (click)="clearFilters()">
-                <mat-icon>clear</mat-icon>
-                Clear Filters
-              </button>
-            }
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Users Table -->
-      <mat-card class="table-card">
-        <mat-card-content>
-          <div class="table-toolbar">
-            <span class="results-count">
-              {{ filteredUsers().length }} users found
-            </span>
-
-            <div class="table-actions">
-              <button mat-icon-button (click)="refreshUsers()" [disabled]="isLoading()">
-                <mat-icon [class.spinning]="isLoading()">refresh</mat-icon>
-              </button>
-            </div>
-          </div>
-
-          @if (isLoading()) {
-            <div class="loading-state">
-              <mat-icon class="spinning">refresh</mat-icon>
-              <span>Loading users...</span>
-            </div>
-          } @else {
-            <div class="table-container">
-              <table mat-table [dataSource]="filteredUsers()" class="users-table">
-                <!-- Avatar & Username Column -->
-                <ng-container matColumnDef="user">
-                  <th mat-header-cell *matHeaderCellDef>User</th>
-                  <td mat-cell *matCellDef="let user">
-                    <div class="user-cell">
-                      <div class="user-avatar">
-                        {{ getUserInitials(user) }}
-                      </div>
-                      <div class="user-info">
-                        <div class="username">{{ user.username }}</div>
-                        <div class="email">{{ user.email }}</div>
-                      </div>
-                    </div>
-                  </td>
-                </ng-container>
-
-                <!-- Roles Column -->
-                <ng-container matColumnDef="roles">
-                  <th mat-header-cell *matHeaderCellDef>Roles</th>
-                  <td mat-cell *matCellDef="let user">
-                    <div class="roles-cell">
-                      @if (user.roles && user.roles.length > 0) {
-                        <mat-chip-set>
-                          @for (role of user.roles; track role) {
-                            <mat-chip>{{ role }}</mat-chip>
-                          }
-                        </mat-chip-set>
-                      } @else {
-                        <span class="no-roles">No roles assigned</span>
-                      }
-                    </div>
-                  </td>
-                </ng-container>
-
-                <!-- Status Column -->
-                <ng-container matColumnDef="status">
-                  <th mat-header-cell *matHeaderCellDef>Status</th>
-                  <td mat-cell *matCellDef="let user">
-                    <div class="status-cell">
-                      <div class="status-badge" [class]="user.isActive ? 'active' : 'inactive'">
-                        <mat-icon>{{ user.isActive ? 'check_circle' : 'cancel' }}</mat-icon>
-                        {{ user.isActive ? 'Active' : 'Inactive' }}
-                      </div>
-                    </div>
-                  </td>
-                </ng-container>
-
-                <!-- Last Login Column -->
-                <ng-container matColumnDef="lastLogin">
-                  <th mat-header-cell *matHeaderCellDef>Last Login</th>
-                  <td mat-cell *matCellDef="let user">
-                    @if (user.lastLoginAt) {
-                      <span class="last-login">{{ user.lastLoginAt | date:'short' }}</span>
-                    } @else {
-                      <span class="never-logged-in">Never logged in</span>
-                    }
-                  </td>
-                </ng-container>
-
-                <!-- Actions Column -->
-                <ng-container matColumnDef="actions">
-                  <th mat-header-cell *matHeaderCellDef>Actions</th>
-                  <td mat-cell *matCellDef="let user">
-                    <div class="actions-cell">
-                      <button mat-icon-button [matMenuTriggerFor]="userMenu"
-                              [matMenuTriggerData]="{user: user}">
-                        <mat-icon>more_vert</mat-icon>
-                      </button>
-                    </div>
-                  </td>
-                </ng-container>
-
-                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-              </table>
-            </div>
-          }
-        </mat-card-content>
-      </mat-card>
+      <!-- Data Grid - Standard: Sadece grid, card wrapper yok -->
+      <div class="grid-section">
+        <app-data-grid
+          [data]="filteredUsers()"
+          [columns]="gridColumns"
+          [actions]="gridActions"
+          [config]="gridConfig"
+          [loading]="isLoading()"
+          [title]="'Kullanıcılar'"
+          [showDefaultToolbar]="true"
+          [enableQuickFilter]="true"
+          (pageChanged)="onPageChange($event)"
+          (filterChanged)="onFilterChange($event)">
+        </app-data-grid>
+      </div>
     </div>
-
-    <!-- User Actions Menu -->
-    <mat-menu #userMenu="matMenu">
-      <ng-template matMenuContent let-user="user">
-        <button mat-menu-item (click)="editUser(user)">
-          <mat-icon>edit</mat-icon>
-          <span>Edit Profile</span>
-        </button>
-        <button mat-menu-item (click)="manageRoles(user)">
-          <mat-icon>admin_panel_settings</mat-icon>
-          <span>Manage Roles</span>
-        </button>
-        <button mat-menu-item (click)="toggleUserStatus(user)">
-          <mat-icon>{{ user.isActive ? 'block' : 'check_circle' }}</mat-icon>
-          <span>{{ user.isActive ? 'Deactivate' : 'Activate' }}</span>
-        </button>
-        <mat-divider></mat-divider>
-        <button mat-menu-item (click)="deleteUser(user)" class="delete-action">
-          <mat-icon>delete</mat-icon>
-          <span>Delete User</span>
-        </button>
-      </ng-template>
-    </mat-menu>
   `,
   styles: [`
-    .users-container {
-      max-width: 1200px;
+    /* Updated for new page layout standards */
+    .page-container {
+      padding: 20px;
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
-    .users-header {
+    .page-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 24px;
-      padding: 24px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 16px;
-      color: white;
+      gap: 20px;
     }
 
-    .header-title h1 {
+    .title-section h1 {
       display: flex;
       align-items: center;
       gap: 12px;
-      font-size: 28px;
-      font-weight: 700;
-      margin: 0 0 8px 0;
-    }
-
-    .header-subtitle {
-      font-size: 16px;
-      opacity: 0.9;
       margin: 0;
+      font-size: 28px;
+      font-weight: 500;
+      color: #1976d2;
     }
 
-    .header-actions {
-      display: flex;
-      gap: 12px;
+    .title-section mat-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
     }
 
-    .filters-card {
-      margin-bottom: 24px;
-    }
-
-    .filters-row {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .filter-field {
-      min-width: 200px;
-    }
-
-    .table-card {
-      margin-bottom: 24px;
-    }
-
-    .table-toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      padding: 0 8px;
-    }
-
-    .results-count {
-      font-size: 14px;
+    .title-section p {
+      margin: 8px 0 0 0;
       color: #666;
+      font-size: 16px;
     }
 
-    .table-actions {
+    .actions-section {
       display: flex;
-      gap: 8px;
-    }
-
-    .loading-state {
-      display: flex;
-      align-items: center;
-      justify-content: center;
       gap: 12px;
-      padding: 48px;
-      color: #666;
-    }
-
-    .table-container {
-      overflow-x: auto;
-    }
-
-    .users-table {
-      width: 100%;
-    }
-
-    .user-cell {
-      display: flex;
       align-items: center;
-      gap: 12px;
     }
 
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 600;
-      font-size: 14px;
-    }
-
-    .user-info {
+    .grid-section {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      min-height: 0;
     }
 
-    .username {
-      font-weight: 600;
-      color: #333;
+    /* All grid-related styles removed - handled by data-grid component */
+
+    /* Context Menu Styles */
+    .danger-menu-item {
+      color: #f44336 !important;
     }
 
-    .email {
-      font-size: 13px;
-      color: #666;
+    .danger-menu-item mat-icon {
+      color: #f44336 !important;
     }
 
-    .roles-cell mat-chip-set {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
+    .warn-menu-item {
+      color: #ff9800 !important;
     }
 
-    .no-roles {
-      color: #999;
-      font-style: italic;
-      font-size: 13px;
+    .warn-menu-item mat-icon {
+      color: #ff9800 !important;
     }
 
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .status-badge.active {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .status-badge.inactive {
-      background: #fef2f2;
-      color: #991b1b;
-    }
-
-    .status-badge mat-icon {
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-    }
-
-    .last-login {
-      font-size: 13px;
-      color: #666;
-    }
-
-    .never-logged-in {
-      font-size: 13px;
-      color: #999;
-      font-style: italic;
-    }
-
-    .actions-cell {
-      display: flex;
-      gap: 4px;
-    }
-
-    .delete-action {
-      color: #dc2626 !important;
-    }
-
-    .spinning {
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
+    /* Responsive Design */
     @media (max-width: 768px) {
-      .users-header {
-        flex-direction: column;
-        gap: 16px;
-        align-items: stretch;
+      .page-container {
+        padding: 16px;
       }
 
-      .filters-row {
+      .page-header {
         flex-direction: column;
         align-items: stretch;
       }
 
-      .filter-field {
-        min-width: auto;
+      .title-section h1 {
+        font-size: 24px;
       }
 
-      .table-toolbar {
-        flex-direction: column;
-        gap: 12px;
-        align-items: stretch;
+      .title-section mat-icon {
+        font-size: 28px;
+        width: 28px;
+        height: 28px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .title-section h1 {
+        font-size: 20px;
+      }
+
+      .title-section mat-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
       }
     }
   `]
@@ -475,15 +194,282 @@ export class UsersComponent implements OnInit {
   ) {}
 
   // Signals
-  users = signal<User[]>([]);
+  users = signal<UserDetailDto[]>([]);
   availableRoles = signal<Role[]>([]);
   isLoading = signal(false);
   searchTerm = signal('');
   roleFilter = signal('');
   statusFilter = signal('');
 
-  // Table configuration
-  displayedColumns = ['user', 'roles', 'status', 'lastLogin', 'actions'];
+  // Context Menu
+
+  // Grid Configuration - Updated for new standards
+  gridColumns: DataGridColumn[] = [
+    {
+      field: 'userInfo',
+      headerName: 'Kullanıcı Bilgileri',
+      flex: 1,
+      minWidth: 350,
+      pinned: 'left',
+      cellRenderer: (params: any) => {
+        const data = params.data;
+        const initials = this.getUserInitials(data);
+        return `
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="
+              width: 32px;
+              height: 32px;
+              border-radius: 50%;
+              background: #1976d2;
+              color: white;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 12px;
+              font-weight: 600;
+            ">${initials}</div>
+            <div style="display: flex; flex-direction: column;">
+              <div style="font-weight: 500; color: #1f2937;">${data.username}</div>
+              <div style="font-size: 12px; color: #6b7280;">${data.email}</div>
+              <div style="font-size: 11px; color: #9ca3af;">ID: ${data.id.substring(0, 8)}...</div>
+            </div>
+          </div>
+        `;
+      },
+      filter: 'agTextColumnFilter',
+      valueGetter: (params: any) => {
+        const data = params.data;
+        return `${data.username} ${data.email} ${data.id.substring(0, 8)}`;
+      },
+      hide: false
+    },
+    {
+      field: 'roles',
+      headerName: 'Roller',
+      width: 180,
+      cellRenderer: (params: any) => {
+        const roles = params.data.roles || [];
+        if (roles.length === 0) {
+          return '<span style="color: #ef4444; font-style: italic;">Rol atanmamış</span>';
+        }
+        const roleChips = roles.slice(0, 2).map((role: any) =>
+          `<span style="
+            background: #e0f2fe;
+            color: #0277bd;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-right: 4px;
+          ">${role.name}</span>`
+        ).join('');
+        const moreText = roles.length > 2 ? `<span style="color: #6b7280; font-size: 11px;">+${roles.length - 2}</span>` : '';
+        return `<div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">${roleChips}${moreText}</div>`;
+      },
+      filter: 'agTextColumnFilter',
+      hide: false
+    },
+    {
+      field: 'isActive',
+      headerName: 'Durum',
+      width: 100,
+      cellRenderer: (params: any) => {
+        const isActive = params.value;
+        const color = isActive ? '#059669' : '#dc2626';
+        const bgColor = isActive ? '#ecfdf5' : '#fef2f2';
+        const text = isActive ? 'Aktif' : 'Pasif';
+        return `
+          <span style="
+            background: ${bgColor};
+            color: ${color};
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+          ">${text}</span>
+        `;
+      },
+      filter: 'agTextColumnFilter',
+      hide: false
+    },
+    {
+      field: 'phoneNumber',
+      headerName: 'Telefon',
+      width: 140,
+      cellRenderer: (params: any) => {
+        const phone = params.value;
+        if (!phone) {
+          return '<span style="color: #9ca3af; font-style: italic;">-</span>';
+        }
+        return `<a href="tel:${phone}" style="color: #1976d2; text-decoration: none;">${phone}</a>`;
+      },
+      filter: 'agTextColumnFilter',
+      hide: false
+    },
+    {
+      field: 'twoFactorEnabled',
+      headerName: '2FA',
+      width: 80,
+      cellRenderer: (params: any) => {
+        const enabled = params.value;
+        const color = enabled ? '#059669' : '#dc2626';
+        const bgColor = enabled ? '#ecfdf5' : '#fef2f2';
+        const text = enabled ? 'Açık' : 'Kapalı';
+        return `
+          <span style="
+            background: ${bgColor};
+            color: ${color};
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+          ">${text}</span>
+        `;
+      },
+      filter: 'agTextColumnFilter',
+      hide: false
+    },
+    {
+      field: 'email',
+      headerName: 'E-posta',
+      width: 200,
+      cellRenderer: (params: any) => {
+        return `<a href="mailto:${params.value}" style="color: #1976d2; text-decoration: none;">${params.value}</a>`;
+      },
+      filter: 'agTextColumnFilter',
+      hide: false
+    },
+    // Ek sütunlar - varsayılan gizli
+    {
+      field: 'emailConfirmed',
+      headerName: 'E-posta Onayı',
+      width: 120,
+      cellRenderer: (params: any) => {
+        const confirmed = params.value;
+        const color = confirmed ? '#059669' : '#dc2626';
+        const bgColor = confirmed ? '#ecfdf5' : '#fef2f2';
+        const text = confirmed ? 'Onaylı' : 'Onaysız';
+        return `
+          <span style="
+            background: ${bgColor};
+            color: ${color};
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+          ">${text}</span>
+        `;
+      },
+      filter: 'agTextColumnFilter',
+      hide: true
+    },
+    {
+      field: 'phoneNumberConfirmed',
+      headerName: 'Telefon Onayı',
+      width: 120,
+      cellRenderer: (params: any) => {
+        const confirmed = params.value;
+        const color = confirmed ? '#059669' : '#dc2626';
+        const bgColor = confirmed ? '#ecfdf5' : '#fef2f2';
+        const text = confirmed ? 'Onaylı' : 'Onaysız';
+        return `
+          <span style="
+            background: ${bgColor};
+            color: ${color};
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+          ">${text}</span>
+        `;
+      },
+      filter: 'agTextColumnFilter',
+      hide: true
+    },
+    {
+      field: 'createdDate',
+      headerName: 'Oluşturma Tarihi',
+      width: 150,
+      cellRenderer: (params: any) => {
+        const date = new Date(params.value);
+        return date.toLocaleDateString('tr-TR') + ' ' + date.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'});
+      },
+      filter: 'agDateColumnFilter',
+      hide: false
+    },
+    {
+      field: 'lastModifiedDate',
+      headerName: 'Son Güncelleme',
+      width: 150,
+      cellRenderer: (params: any) => {
+        if (!params.value) return '-';
+        const date = new Date(params.value);
+        return date.toLocaleDateString('tr-TR') + ' ' + date.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'});
+      },
+      filter: 'agDateColumnFilter',
+      hide: false
+    }
+  ];
+
+  // Context Menu Actions - Updated for new color standards
+  gridActions: DataGridAction[] = [
+    {
+      icon: 'visibility',
+      tooltip: 'Detayları Görüntüle',
+      color: undefined,
+      click: (row: UserDetailDto) => this.viewUserDetails(row)
+    },
+    {
+      icon: 'edit',
+      tooltip: 'Profil Düzenle',
+      color: 'primary',
+      click: (row: UserDetailDto) => this.editUser(row)
+    },
+    {
+      icon: 'admin_panel_settings',
+      tooltip: 'Rolleri Yönet',
+      color: 'accent',
+      click: (row: UserDetailDto) => this.manageRoles(row)
+    },
+    {
+      icon: 'block',
+      tooltip: 'Durumu Değiştir',
+      color: 'accent',
+      click: (row: UserDetailDto) => this.toggleUserStatus(row)
+    },
+    {
+      icon: 'content_copy',
+      tooltip: 'Kopyala',
+      color: 'accent',
+      click: (row: UserDetailDto) => this.duplicateUser(row)
+    },
+    {
+      icon: 'delete',
+      tooltip: 'Kullanıcı Sil',
+      color: 'warn',
+      click: (row: UserDetailDto) => this.deleteUser(row)
+    }
+  ];
+
+  gridConfig: DataGridConfig = {
+    enableSorting: true,
+    enableFiltering: true,
+    enablePagination: true,
+    paginationPageSize: 15,
+    paginationPageSizeSelector: [15, 30, 50, 100],
+    enableSelection: false,
+    enableContextMenu: true,
+    enableColumnResize: true,
+    enableColumnReorder: true,
+    enableAutoSizeColumns: false,
+    rowHeight: 60,
+    headerHeight: 48
+  };
+
+  // Pagination
+  totalCount = signal(0);
+  pageNumber = signal(1);
+  pageSize = signal(15);
 
   ngOnInit() {
     this.loadUsers();
@@ -506,7 +492,7 @@ export class UsersComponent implements OnInit {
 
     if (roleId) {
       users = users.filter(user =>
-        user.roles?.some(role => role === roleId)
+        user.roles?.some(role => role.id === roleId)
       );
     }
 
@@ -524,26 +510,30 @@ export class UsersComponent implements OnInit {
   });
 
   // Data loading
-  async loadUsers() {
+  loadUsers() {
     this.isLoading.set(true);
-    try {
-      const users = await this.userService.getUsers().toPromise();
-      this.users.set(users || []);
-    } catch (error) {
-      console.error('Failed to load users:', error);
-      this.snackBar.open('Failed to load users', 'Close', { duration: 3000 });
-    } finally {
-      this.isLoading.set(false);
-    }
+    this.userService.getUsers().subscribe({
+      next: (users) => {
+        this.users.set(users || []);
+        this.isLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Failed to load users:', error);
+        this.snackBar.open('Failed to load users', 'Close', { duration: 3000 });
+        this.isLoading.set(false);
+      }
+    });
   }
 
-  async loadRoles() {
-    try {
-      const roles = await this.roleService.getRoles().toPromise();
-      this.availableRoles.set(roles || []);
-    } catch (error) {
-      console.error('Failed to load roles:', error);
-    }
+  loadRoles() {
+    this.roleService.getAllRoles().subscribe({
+      next: (roles) => {
+        this.availableRoles.set(roles || []);
+      },
+      error: (error) => {
+        console.error('Failed to load roles:', error);
+      }
+    });
   }
 
   // Event handlers
@@ -570,65 +560,195 @@ export class UsersComponent implements OnInit {
     this.loadUsers();
   }
 
+
+  // Filter helpers
+  getRoleFilterLabel(): string {
+    const roleId = this.roleFilter();
+    if (!roleId) return 'All Roles';
+
+    const role = this.availableRoles().find(r => r.id === roleId);
+    return role ? role.name : 'All Roles';
+  }
+
+  getStatusFilterLabel(): string {
+    const status = this.statusFilter();
+    if (!status) return 'All Status';
+    return status === 'active' ? 'Active' : 'Inactive';
+  }
+
+  toggleRoleFilter() {
+    // TODO: Implement role filter dropdown or modal
+    console.log('Toggle role filter');
+  }
+
+  toggleStatusFilter() {
+    // TODO: Implement status filter dropdown or modal
+    console.log('Toggle status filter');
+  }
+
   // User actions
   openCreateUserDialog() {
-    // TODO: Implement create user dialog
-    console.log('Open create user dialog');
+    const dialogData: UserFormDialogData = {
+      mode: 'create'
+    };
+
+    const dialogRef = this.dialog.open(UserFormDialogComponent, {
+      width: '600px',
+      data: dialogData,
+      disableClose: true
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.loadUsers();
+      }
+    });
   }
 
-  editUser(user: User) {
-    // TODO: Implement edit user dialog
-    console.log('Edit user:', user);
+  editUser(user: UserDetailDto) {
+    const dialogData: UserFormDialogData = {
+      mode: 'edit',
+      user: user
+    };
+
+    const dialogRef = this.dialog.open(UserFormDialogComponent, {
+      width: '600px',
+      data: dialogData,
+      disableClose: true
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.loadUsers();
+      }
+    });
   }
 
-  manageRoles(user: User) {
-    // TODO: Implement manage roles dialog
-    console.log('Manage roles for user:', user);
+  manageRoles(user: UserDetailDto) {
+    const dialogData: RoleAssignmentDialogData = {
+      user: user
+    };
+
+    const dialogRef = this.dialog.open(RoleAssignmentDialogComponent, {
+      width: '600px',
+      data: dialogData,
+      disableClose: true
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.loadUsers();
+      }
+    });
   }
 
-  async toggleUserStatus(user: User) {
-    try {
-      const newStatus = !user.isActive;
-      await this.userService.updateUser(user.id, { isActive: newStatus }).toPromise();
+  toggleUserStatus(user: UserDetailDto) {
+    const newStatus = !user.isActive;
+    this.userService.updateUserProfile(user.id, { isActive: newStatus }).subscribe({
+      next: () => {
+        // Update local state
+        const users = this.users().map(u =>
+          u.id === user.id ? { ...u, isActive: newStatus } : u
+        );
+        this.users.set(users);
 
-      // Update local state
-      const users = this.users().map(u =>
-        u.id === user.id ? { ...u, isActive: newStatus } : u
-      );
-      this.users.set(users);
+        this.snackBar.open(
+          `User ${newStatus ? 'activated' : 'deactivated'} successfully`,
+          'Close',
+          { duration: 3000 }
+        );
+      },
+      error: (error) => {
+        console.error('Failed to update user status:', error);
+        this.snackBar.open('Failed to update user status', 'Close', { duration: 3000 });
+      }
+    });
+  }
 
-      this.snackBar.open(
-        `User ${newStatus ? 'activated' : 'deactivated'} successfully`,
-        'Close',
-        { duration: 3000 }
-      );
-    } catch (error) {
-      console.error('Failed to update user status:', error);
-      this.snackBar.open('Failed to update user status', 'Close', { duration: 3000 });
+  // Grid Action Methods - New implementations
+  viewUserDetails(user: UserDetailDto): void {
+    console.log('Viewing user details:', user);
+    // TODO: Implement user details view
+  }
+
+  duplicateUser(user: UserDetailDto): void {
+    const duplicated = { ...user };
+    delete (duplicated as any).id;
+    duplicated.username = `${duplicated.username}_copy`;
+    duplicated.email = `copy_${duplicated.email}`;
+
+    const dialogData: UserFormDialogData = {
+      mode: 'create',
+      user: duplicated
+    };
+
+    const dialogRef = this.dialog.open(UserFormDialogComponent, {
+      width: '600px',
+      data: dialogData,
+      disableClose: true
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.loadUsers();
+      }
+    });
+  }
+
+  deleteUser(user: UserDetailDto) {
+    if (confirm(`"${user.username}" kullanıcısını silmek istediğinizden emin misiniz?`)) {
+      this.userService.deleteUser(user.id).subscribe({
+        next: () => {
+          // Remove from local state
+          const users = this.users().filter(u => u.id !== user.id);
+          this.users.set(users);
+
+          this.snackBar.open('Kullanıcı başarıyla silindi', 'Tamam', { duration: 3000 });
+        },
+        error: (error) => {
+          console.error('Failed to delete user:', error);
+          this.snackBar.open('Kullanıcı silinirken hata oluştu', 'Tamam', { duration: 3000 });
+        }
+      });
     }
   }
 
-  async deleteUser(user: User) {
-    if (confirm(`Are you sure you want to delete user "${user.username}"?`)) {
-      try {
-        await this.userService.deleteUser(user.id).toPromise();
+  exportToExcel(): void {
+    console.log('Exporting users to Excel');
+    // TODO: Implement Excel export
+    this.snackBar.open('Excel export özelliği yakında eklenecek', 'Tamam', { duration: 3000 });
+  }
 
-        // Remove from local state
-        const users = this.users().filter(u => u.id !== user.id);
-        this.users.set(users);
+  onPageChange(page: any): void {
+    this.pageNumber.set(page.pageNumber);
+    this.pageSize.set(page.pageSize);
+    // Since this uses local filtering, no API call needed
+  }
 
-        this.snackBar.open('User deleted successfully', 'Close', { duration: 3000 });
-      } catch (error) {
-        console.error('Failed to delete user:', error);
-        this.snackBar.open('Failed to delete user', 'Close', { duration: 3000 });
-      }
+  onFilterChange(filters: any): void {
+    this.searchTerm.set(filters.globalSearch || '');
+  }
+
+
+  assignRolesToUser(user: UserDetailDto): void {
+    this.manageRoles(user);
+  }
+
+  resetUserPassword(user: UserDetailDto): void {
+    if (confirm(`"${user.username}" kullanıcısının şifresini sıfırlamak istediğinizden emin misiniz?`)) {
+      // API call for password reset
+      this.snackBar.open('Şifre sıfırlama özelliği yakında eklenecek', 'Tamam', { duration: 3000 });
+      console.log('Reset password for user:', user);
     }
   }
 
   // Helper methods
-  getUserInitials(user: User): string {
-    const firstName = user.firstName || user.username?.charAt(0) || 'U';
-    const lastName = user.lastName || user.username?.charAt(1) || 'N';
-    return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+  getUserInitials(user: UserDetailDto): string {
+    const username = user.username;
+    if (!username || username.length === 0) return 'UN';
+
+    if (username.length === 1) return username.toUpperCase();
+
+    return (username.charAt(0) + username.charAt(1)).toUpperCase();
   }
 }

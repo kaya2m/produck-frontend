@@ -1,0 +1,389 @@
+// Global Theme Configuration
+// This file extends Angular Material's theming system with our custom design tokens
+
+@use '@angular/material' as mat;
+@use 'design-tokens' as tokens;
+
+// ======================================
+// CUSTOM MATERIAL PALETTE
+// ======================================
+
+// Primary Palette
+$produck-primary: (
+  50: #{tokens.$primary-50},
+  100: #{tokens.$primary-100},
+  200: #{tokens.$primary-200},
+  300: #{tokens.$primary-300},
+  400: #{tokens.$primary-400},
+  500: #{tokens.$primary-500},
+  600: #{tokens.$primary-600},
+  700: #{tokens.$primary-700},
+  800: #{tokens.$primary-800},
+  900: #{tokens.$primary-900},
+  A100: #{tokens.$primary-100},
+  A200: #{tokens.$primary-200},
+  A400: #{tokens.$primary-400},
+  A700: #{tokens.$primary-700},
+  contrast: (
+    50: #{tokens.$text-primary},
+    100: #{tokens.$text-primary},
+    200: #{tokens.$text-primary},
+    300: #{tokens.$text-primary},
+    400: #{tokens.$text-inverse},
+    500: #{tokens.$text-inverse},
+    600: #{tokens.$text-inverse},
+    700: #{tokens.$text-inverse},
+    800: #{tokens.$text-inverse},
+    900: #{tokens.$text-inverse},
+    A100: #{tokens.$text-primary},
+    A200: #{tokens.$text-primary},
+    A400: #{tokens.$text-inverse},
+    A700: #{tokens.$text-inverse},
+  )
+);
+
+// Accent Palette
+$produck-accent: (
+  50: #{tokens.$secondary-50},
+  100: #{tokens.$secondary-100},
+  200: #{tokens.$secondary-200},
+  300: #{tokens.$secondary-300},
+  400: #{tokens.$secondary-400},
+  500: #{tokens.$secondary-500},
+  600: #{tokens.$secondary-600},
+  700: #{tokens.$secondary-700},
+  800: #{tokens.$secondary-800},
+  900: #{tokens.$secondary-900},
+  A100: #{tokens.$secondary-100},
+  A200: #{tokens.$secondary-200},
+  A400: #{tokens.$secondary-400},
+  A700: #{tokens.$secondary-700},
+  contrast: (
+    50: #{tokens.$text-primary},
+    100: #{tokens.$text-primary},
+    200: #{tokens.$text-primary},
+    300: #{tokens.$text-primary},
+    400: #{tokens.$text-inverse},
+    500: #{tokens.$text-inverse},
+    600: #{tokens.$text-inverse},
+    700: #{tokens.$text-inverse},
+    800: #{tokens.$text-inverse},
+    900: #{tokens.$text-inverse},
+    A100: #{tokens.$text-primary},
+    A200: #{tokens.$text-primary},
+    A400: #{tokens.$text-inverse},
+    A700: #{tokens.$text-inverse},
+  )
+);
+
+// Warn Palette
+$produck-warn: (
+  50: #{tokens.$error-50},
+  100: #{tokens.$error-100},
+  200: #{tokens.$error-200},
+  300: #{tokens.$error-300},
+  400: #{tokens.$error-400},
+  500: #{tokens.$error-500},
+  600: #{tokens.$error-600},
+  700: #{tokens.$error-700},
+  800: #{tokens.$error-800},
+  900: #{tokens.$error-900},
+  A100: #{tokens.$error-100},
+  A200: #{tokens.$error-200},
+  A400: #{tokens.$error-400},
+  A700: #{tokens.$error-700},
+  contrast: (
+    50: #{tokens.$text-primary},
+    100: #{tokens.$text-primary},
+    200: #{tokens.$text-primary},
+    300: #{tokens.$text-primary},
+    400: #{tokens.$text-inverse},
+    500: #{tokens.$text-inverse},
+    600: #{tokens.$text-inverse},
+    700: #{tokens.$text-inverse},
+    800: #{tokens.$text-inverse},
+    900: #{tokens.$text-inverse},
+    A100: #{tokens.$text-primary},
+    A200: #{tokens.$text-primary},
+    A400: #{tokens.$text-inverse},
+    A700: #{tokens.$text-inverse},
+  )
+);
+
+// ======================================
+// THEME CONFIGURATION
+// ======================================
+
+// Create the theme object
+$produck-theme: mat.define-light-theme((
+  color: (
+    primary: mat.define-palette($produck-primary, 500),
+    accent: mat.define-palette($produck-accent, 500),
+    warn: mat.define-palette($produck-warn, 500),
+  ),
+  typography: mat.define-typography-config(
+    $font-family: #{tokens.$font-primary},
+    $headline-1: mat.define-typography-level(2.5rem, 3rem, 300, $letter-spacing: -0.0156em),
+    $headline-2: mat.define-typography-level(2rem, 2.5rem, 300, $letter-spacing: -0.0083em),
+    $headline-3: mat.define-typography-level(1.75rem, 2.25rem, 400),
+    $headline-4: mat.define-typography-level(1.5rem, 2rem, 400),
+    $headline-5: mat.define-typography-level(1.25rem, 1.75rem, 500),
+    $headline-6: mat.define-typography-level(1.125rem, 1.5rem, 500),
+    $subtitle-1: mat.define-typography-level(1rem, 1.5rem, 400),
+    $subtitle-2: mat.define-typography-level(0.875rem, 1.25rem, 500),
+    $body-1: mat.define-typography-level(1rem, 1.5rem, 400),
+    $body-2: mat.define-typography-level(0.875rem, 1.25rem, 400),
+    $button: mat.define-typography-level(0.875rem, 1rem, 500),
+    $caption: mat.define-typography-level(0.75rem, 1rem, 400),
+    $overline: mat.define-typography-level(0.625rem, 1rem, 500, $letter-spacing: 0.08em),
+  ),
+  density: 0,
+));
+
+// ======================================
+// DARK THEME CONFIGURATION
+// ======================================
+
+$produck-dark-theme: mat.define-dark-theme((
+  color: (
+    primary: mat.define-palette($produck-primary, 400),
+    accent: mat.define-palette($produck-accent, 400),
+    warn: mat.define-palette($produck-warn, 400),
+  ),
+  typography: mat.define-typography-config(
+    $font-family: #{tokens.$font-primary},
+  ),
+  density: 0,
+));
+
+// ======================================
+// GLOBAL THEME STYLES
+// ======================================
+
+// Apply the theme to all Material components
+@include mat.all-component-themes($produck-theme);
+
+// Dark theme styles (apply when .dark-theme class is present)
+.dark-theme {
+  @include mat.all-component-colors($produck-dark-theme);
+
+  // Custom dark theme variables
+  --bg-primary: #{tokens.$gray-900};
+  --bg-secondary: #{tokens.$gray-800};
+  --bg-tertiary: #{tokens.$gray-700};
+  --text-primary: #{tokens.$gray-100};
+  --text-secondary: #{tokens.$gray-300};
+  --text-tertiary: #{tokens.$gray-400};
+  --border-light: #{tokens.$gray-700};
+  --border-medium: #{tokens.$gray-600};
+  --border-dark: #{tokens.$gray-500};
+}
+
+// ======================================
+// CSS CUSTOM PROPERTIES
+// ======================================
+
+:root {
+  // Colors
+  --primary-50: #{tokens.$primary-50};
+  --primary-100: #{tokens.$primary-100};
+  --primary-200: #{tokens.$primary-200};
+  --primary-300: #{tokens.$primary-300};
+  --primary-400: #{tokens.$primary-400};
+  --primary-500: #{tokens.$primary-500};
+  --primary-600: #{tokens.$primary-600};
+  --primary-700: #{tokens.$primary-700};
+  --primary-800: #{tokens.$primary-800};
+  --primary-900: #{tokens.$primary-900};
+
+  --success-50: #{tokens.$success-50};
+  --success-500: #{tokens.$success-500};
+  --success-600: #{tokens.$success-600};
+
+  --warning-50: #{tokens.$warning-50};
+  --warning-500: #{tokens.$warning-500};
+  --warning-600: #{tokens.$warning-600};
+
+  --error-50: #{tokens.$error-50};
+  --error-500: #{tokens.$error-500};
+  --error-600: #{tokens.$error-600};
+
+  --info-50: #{tokens.$info-50};
+  --info-500: #{tokens.$info-500};
+  --info-600: #{tokens.$info-600};
+
+  // Semantic colors
+  --bg-primary: #{tokens.$bg-primary};
+  --bg-secondary: #{tokens.$bg-secondary};
+  --bg-tertiary: #{tokens.$bg-tertiary};
+  --bg-overlay: #{tokens.$bg-overlay};
+
+  --text-primary: #{tokens.$text-primary};
+  --text-secondary: #{tokens.$text-secondary};
+  --text-tertiary: #{tokens.$text-tertiary};
+  --text-disabled: #{tokens.$text-disabled};
+  --text-inverse: #{tokens.$text-inverse};
+
+  --border-light: #{tokens.$border-light};
+  --border-medium: #{tokens.$border-medium};
+  --border-dark: #{tokens.$border-dark};
+  --border-focus: #{tokens.$border-focus};
+
+  // Typography
+  --font-primary: #{tokens.$font-primary};
+  --font-secondary: #{tokens.$font-secondary};
+  --font-mono: #{tokens.$font-mono};
+
+  // Spacing
+  --space-1: #{tokens.$space-1};
+  --space-2: #{tokens.$space-2};
+  --space-3: #{tokens.$space-3};
+  --space-4: #{tokens.$space-4};
+  --space-5: #{tokens.$space-5};
+  --space-6: #{tokens.$space-6};
+  --space-8: #{tokens.$space-8};
+  --space-10: #{tokens.$space-10};
+  --space-12: #{tokens.$space-12};
+  --space-16: #{tokens.$space-16};
+  --space-20: #{tokens.$space-20};
+  --space-24: #{tokens.$space-24};
+
+  // Border radius
+  --radius-sm: #{tokens.$radius-sm};
+  --radius-base: #{tokens.$radius-base};
+  --radius-md: #{tokens.$radius-md};
+  --radius-lg: #{tokens.$radius-lg};
+  --radius-xl: #{tokens.$radius-xl};
+  --radius-2xl: #{tokens.$radius-2xl};
+  --radius-full: #{tokens.$radius-full};
+
+  // Shadows
+  --shadow-sm: #{tokens.$shadow-sm};
+  --shadow-base: #{tokens.$shadow-base};
+  --shadow-md: #{tokens.$shadow-md};
+  --shadow-lg: #{tokens.$shadow-lg};
+  --shadow-xl: #{tokens.$shadow-xl};
+  --shadow-2xl: #{tokens.$shadow-2xl};
+
+  // Transitions
+  --transition-fast: #{tokens.$transition-fast};
+  --transition-base: #{tokens.$transition-base};
+  --transition-slow: #{tokens.$transition-slow};
+}
+
+// ======================================
+// COMPONENT THEME OVERRIDES
+// ======================================
+
+// Button overrides
+.mat-mdc-button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button,
+.mat-mdc-unelevated-button {
+  border-radius: var(--radius-md);
+  font-weight: #{tokens.$font-medium};
+  letter-spacing: 0.025em;
+
+  &.btn-small {
+    height: #{tokens.$button-height-sm};
+    padding: 0 #{tokens.$button-padding-x-sm};
+    font-size: #{tokens.$text-sm};
+  }
+
+  &.btn-medium {
+    height: #{tokens.$button-height-md};
+    padding: 0 #{tokens.$button-padding-x-md};
+    font-size: #{tokens.$text-base};
+  }
+
+  &.btn-large {
+    height: #{tokens.$button-height-lg};
+    padding: 0 #{tokens.$button-padding-x-lg};
+    font-size: #{tokens.$text-lg};
+  }
+}
+
+// Card overrides
+.mat-mdc-card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-base);
+
+  .mat-mdc-card-header {
+    padding: #{tokens.$card-padding-md} #{tokens.$card-padding-md} 0;
+  }
+
+  .mat-mdc-card-content {
+    padding: #{tokens.$card-padding-md};
+  }
+
+  .mat-mdc-card-actions {
+    padding: 0 #{tokens.$card-padding-md} #{tokens.$card-padding-md};
+  }
+}
+
+// Form field overrides
+.mat-mdc-form-field {
+  .mat-mdc-text-field-wrapper {
+    border-radius: var(--radius-md);
+  }
+
+  &.input-small {
+    .mat-mdc-text-field-wrapper {
+      height: #{tokens.$input-height-sm};
+    }
+  }
+
+  &.input-medium {
+    .mat-mdc-text-field-wrapper {
+      height: #{tokens.$input-height-md};
+    }
+  }
+
+  &.input-large {
+    .mat-mdc-text-field-wrapper {
+      height: #{tokens.$input-height-lg};
+    }
+  }
+}
+
+// Dialog overrides
+.mat-mdc-dialog-container {
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-2xl);
+}
+
+// Table overrides
+.mat-mdc-table {
+  .mat-mdc-header-row {
+    background-color: var(--bg-secondary);
+  }
+
+  .mat-mdc-row:hover {
+    background-color: var(--bg-secondary);
+  }
+}
+
+// Snackbar overrides
+.mat-mdc-snack-bar-container {
+  border-radius: var(--radius-lg);
+
+  &.success-snackbar {
+    background-color: var(--success-600);
+    color: white;
+  }
+
+  &.warning-snackbar {
+    background-color: var(--warning-600);
+    color: white;
+  }
+
+  &.error-snackbar {
+    background-color: var(--error-600);
+    color: white;
+  }
+
+  &.info-snackbar {
+    background-color: var(--info-600);
+    color: white;
+  }
+}

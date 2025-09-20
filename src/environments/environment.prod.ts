@@ -1,7 +1,7 @@
 export const environment = {
   production: true,
   api: {
-    baseUrl: 'https://api.produck.com/api',
+    baseUrl: 'https://api.produck.com/api/v1.0',
     timeout: 30000,
     retryAttempts: 2
   },

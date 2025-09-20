@@ -1,41 +1,51 @@
 import { inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { CanActivateFn } from '@angular/router';
+import { of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import { AuthService } from '../services/auth.service';
 
 // Modern Functional Guard (Angular 14+)
 export const authGuard: CanActivateFn = (route, state) => {
-  const router = inject(Router);
+  const authService = inject(AuthService);
 
-  // Mock authentication check - in real app would use AuthService
-  const isAuthenticated = localStorage.getItem('produck_demo_auth') === 'true';
-
-  if (isAuthenticated) {
+  if (authService.hasValidToken()) {
     return true;
   }
 
-  // Redirect to login with return URL
-  router.navigate(['/login'], {
-    queryParams: { returnUrl: state.url }
-  });
+  const refreshToken = authService.getRefreshToken();
+  if (refreshToken) {
+    return authService.refreshToken().pipe(
+      map(() => true),
+      catchError(() => {
+        authService.logout(state.url);
+        return of(false);
+      })
+    );
+  }
 
+  authService.logout(state.url);
   return false;
 };
 
 // Alternative: Signal-based auth check
 export const signalAuthGuard: CanActivateFn = (route, state) => {
-  const router = inject(Router);
+  const authService = inject(AuthService);
 
-  // Check if user is authenticated
-  const isAuthenticated = localStorage.getItem('produck_demo_auth') === 'true';
-
-  if (isAuthenticated) {
+  if (authService.hasValidToken()) {
     return true;
   }
 
-  // Redirect to login with return URL
-  router.navigate(['/login'], {
-    queryParams: { returnUrl: state.url }
-  });
+  const refreshToken = authService.getRefreshToken();
+  if (refreshToken) {
+    return authService.refreshToken().pipe(
+      map(() => true),
+      catchError(() => {
+        authService.logout(state.url);
+        return of(false);
+      })
+    );
+  }
 
+  authService.logout(state.url);
   return false;
 };

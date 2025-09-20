@@ -1,0 +1,250 @@
+<div class="page-container">
+  <!-- Header - Updated for new standards -->
+  <div class="page-header">
+    <div class="title-section">
+      <h1><mat-icon>business</mat-icon>Hesap Yönetimi</h1>
+      <p>Müşteri hesaplarını yönetin ve takip edin</p>
+    </div>
+    <div class="actions-section">
+      <button mat-raised-button color="primary" (click)="openCreateAccountDialog()">
+        <mat-icon>add</mat-icon>Yeni Hesap
+      </button>
+      <button mat-icon-button matTooltip="Excel'e Aktar" (click)="exportToExcel()">
+        <mat-icon>download</mat-icon>
+      </button>
+      <button mat-icon-button matTooltip="Yenile" (click)="loadAccounts()">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="grid-section">
+    <app-data-grid
+      [data]="accounts()"
+      [columns]="gridColumns"
+      [actions]="gridActions"
+      [config]="gridConfig"
+      [loading]="loading()"
+      [totalCount]="totalCount()"
+      [pageSize]="pageSize()"
+      [currentPage]="pageNumber()"
+      [serverSidePagination]="true"
+      [title]="'Hesaplar'"
+      [showDefaultToolbar]="true"
+      [enableQuickFilter]="true"
+      (pageChanged)="onPageChange($event)">
+    </app-data-grid>
+  </div>
+</div>
+
+
+<!-- Create/Edit Account Dialog -->
+@if (showAccountDialog()) {
+  <div class="dialog-overlay" (click)="closeAccountDialog()">
+    <div class="dialog-container account-dialog" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>{{ editingAccount() ? 'Hesap Düzenle' : 'Yeni Hesap Oluştur' }}</h2>
+        <button mat-icon-button (click)="closeAccountDialog()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="accountForm" (ngSubmit)="saveAccount()" class="dialog-form">
+        <mat-tab-group class="account-tabs" animationDuration="300ms">
+
+          <!-- Tab 1: Temel Bilgiler -->
+          <mat-tab label="Temel Bilgiler">
+            <div class="tab-content">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Hesap Adı *</mat-label>
+                <input matInput formControlName="name" placeholder="Şirket adı">
+                <mat-error *ngIf="accountForm.get('name')?.hasError('required')">
+                  Hesap adı gereklidir
+                </mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Yasal Adı</mat-label>
+                <input matInput formControlName="legalName" placeholder="Resmi şirket adı">
+              </mat-form-field>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Müşteri Kodu *</mat-label>
+                  <input matInput formControlName="customerCode" placeholder="Benzersiz kod">
+                  <mat-error *ngIf="accountForm.get('customerCode')?.hasError('required')">
+                    Müşteri kodu gereklidir
+                  </mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Müşteri Türü *</mat-label>
+                  <mat-select formControlName="customerType">
+                    @for (type of customerTypes(); track type.value) {
+                      <mat-option [value]="type.value">{{ type.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Durum *</mat-label>
+                  <mat-select formControlName="status">
+                    @for (status of accountStatuses(); track status.value) {
+                      <mat-option [value]="status.value">{{ status.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Sektör</mat-label>
+                  <mat-select formControlName="industry">
+                    <mat-option value="">Seçiniz</mat-option>
+                    @for (industry of industries(); track industry.value) {
+                      <mat-option [value]="industry.value">{{ industry.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            </div>
+          </mat-tab>
+
+          <!-- Tab 2: İletişim Bilgileri -->
+          <mat-tab label="İletişim">
+            <div class="tab-content">
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Ana Telefon</mat-label>
+                  <input matInput formControlName="mainPhone" placeholder="+90 212 555 0123">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Ana E-posta</mat-label>
+                  <input matInput formControlName="mainEmail" placeholder="info@sirket.com">
+                  <mat-error *ngIf="accountForm.get('mainEmail')?.hasError('email')">
+                    Geçerli bir e-posta adresi giriniz
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Web Sitesi</mat-label>
+                <input matInput formControlName="website" placeholder="https://www.sirket.com">
+              </mat-form-field>
+            </div>
+          </mat-tab>
+
+          <!-- Tab 3: Vergi Bilgileri -->
+          <mat-tab label="Vergi Bilgileri">
+            <div class="tab-content">
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Vergi Numarası</mat-label>
+                  <input matInput formControlName="taxId" placeholder="1234567890">
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Vergi Dairesi</mat-label>
+                  <input matInput formControlName="taxOffice" placeholder="Beşiktaş">
+                </mat-form-field>
+              </div>
+            </div>
+          </mat-tab>
+
+          <!-- Tab 4: Finansal Bilgiler -->
+          <mat-tab label="Finansal">
+            <div class="tab-content">
+              <div class="form-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Para Birimi</mat-label>
+                  <mat-select formControlName="currency">
+                    @for (currency of currencies(); track currency.value) {
+                      <mat-option [value]="currency.value">{{ currency.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Ödeme Koşulları</mat-label>
+                  <mat-select formControlName="paymentTerms">
+                    @for (term of paymentTerms(); track term.value) {
+                      <mat-option [value]="term.value">{{ term.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              </div>
+            </div>
+          </mat-tab>
+
+          <!-- Tab 5: Ek Bilgiler -->
+          <mat-tab label="Ek Bilgiler">
+            <div class="tab-content">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Açıklama</mat-label>
+                <textarea matInput
+                          formControlName="description"
+                          placeholder="Hesap hakkında notlar"
+                          rows="3"></textarea>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Sorumlu Kullanıcı *</mat-label>
+                <input matInput
+                       placeholder="Kullanıcı ara..."
+                       formControlName="ownerUserId"
+                       [matAutocomplete]="userAutocomplete">
+                <mat-autocomplete #userAutocomplete="matAutocomplete" [displayWith]="displayUserFn">
+                  @for (user of filteredUsers(); track user.id) {
+                    <mat-option [value]="user.id">
+                      <span>{{ user.name }}</span>
+                    </mat-option>
+                  }
+                </mat-autocomplete>
+                <mat-error *ngIf="accountForm.get('ownerUserId')?.hasError('required')">
+                  Sorumlu kullanıcı gereklidir
+                </mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Ana Hesap</mat-label>
+                <input matInput
+                       placeholder="Ana hesap ara..."
+                       formControlName="parentAccountId"
+                       [matAutocomplete]="parentAccountAutocomplete">
+                <mat-autocomplete #parentAccountAutocomplete="matAutocomplete" [displayWith]="displayAccountFn">
+                  <mat-option value="">Ana hesap yok</mat-option>
+                  @for (account of filteredParentAccounts(); track account.id) {
+                    <mat-option [value]="account.id">
+                      <span>{{ account.name }}</span>
+                    </mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
+            </div>
+          </mat-tab>
+
+        </mat-tab-group>
+
+        <div class="dialog-actions">
+          <button type="button"
+                  mat-button
+                  (click)="closeAccountDialog()">
+            İptal
+          </button>
+          <button type="submit"
+                  mat-raised-button
+                  color="primary"
+                  [disabled]="accountForm.invalid || saving()">
+            @if (saving()) {
+              <mat-icon class="loading-icon">refresh</mat-icon>
+            } @else {
+              <mat-icon>{{ editingAccount() ? 'save' : 'add' }}</mat-icon>
+            }
+            {{ editingAccount() ? 'Güncelle' : 'Oluştur' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

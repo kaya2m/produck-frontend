@@ -1,5 +1,9 @@
 /* You can add global styles to this file, and also import other style files */
 
+/* AG Grid CSS */
+@import 'ag-grid-community/styles/ag-grid.css';
+@import 'ag-grid-community/styles/ag-theme-alpine.css';
+
 /* Google Fonts - Inter */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -101,4 +105,130 @@ body {
 html {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
+}
+
+/* Common Layout Patterns */
+@layer components {
+  /* Container patterns used across admin components */
+  .admin-container {
+    @apply max-w-6xl mx-auto p-6 flex flex-col gap-6;
+  }
+
+  .admin-container-wide {
+    @apply max-w-7xl mx-auto p-6 flex flex-col gap-6;
+  }
+
+  /* Filter and toolbar patterns */
+  .filters-row {
+    @apply flex gap-4 items-end flex-wrap;
+  }
+
+  .toolbar-actions {
+    @apply flex gap-3 items-center;
+  }
+
+  /* Empty state pattern */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-12 px-6 text-center;
+  }
+
+  .empty-icon {
+    @apply text-6xl w-16 h-16 text-gray-300 mb-4;
+  }
+
+  /* Loading states */
+  .loading-container {
+    @apply flex flex-col items-center justify-center py-12 gap-4;
+  }
+
+  /* Metric cards pattern */
+  .metrics-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5;
+  }
+
+  .metric-content {
+    @apply flex items-center gap-4 p-4;
+  }
+
+  .metric-icon-wrapper {
+    @apply w-12 h-12 rounded-full flex items-center justify-center bg-gray-100;
+  }
+
+  .metric-icon-wrapper.warning {
+    @apply bg-yellow-100 text-yellow-600;
+  }
+
+  .metric-icon-wrapper.danger {
+    @apply bg-red-100 text-red-600;
+  }
+
+  .metric-icon-wrapper.success {
+    @apply bg-green-100 text-green-600;
+  }
+
+  .metric-details {
+    @apply flex flex-col gap-1;
+  }
+
+  .metric-value {
+    @apply text-3xl font-bold text-gray-900 leading-none;
+  }
+
+  .metric-subtitle {
+    @apply text-sm text-gray-500;
+  }
+
+  /* Configuration grid pattern */
+  .config-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4;
+  }
+
+  .config-actions {
+    @apply flex justify-end gap-3 pt-6 border-t border-gray-200;
+  }
+
+  /* Text utility classes */
+  .text-success {
+    @apply text-green-600;
+  }
+
+  .text-danger {
+    @apply text-red-600;
+  }
+
+  .text-warning {
+    @apply text-yellow-600;
+  }
+
+  .text-primary {
+    @apply text-blue-600;
+  }
+
+  /* Responsive patterns */
+  @media (max-width: 768px) {
+    .admin-container,
+    .admin-container-wide {
+      @apply p-4;
+    }
+
+    .filters-row {
+      @apply flex-col items-stretch gap-3;
+    }
+
+    .toolbar-actions {
+      @apply flex-col gap-2;
+    }
+
+    .config-grid {
+      @apply grid-cols-1;
+    }
+
+    .config-actions {
+      @apply flex-col;
+    }
+
+    .metrics-grid {
+      @apply grid-cols-1;
+    }
+  }
 }
